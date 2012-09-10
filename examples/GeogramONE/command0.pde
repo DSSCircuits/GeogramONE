@@ -25,7 +25,7 @@ uint8_t command0(uint8_t *cmd0)  //send coordinates
 	GSM.print("Sa=");GSM.println(lastValid.satellitesUsed,DEC);
 	#endif
 	#if USEALTITUDE
-	GSM.print("A=");GSM.println(lastValid.altitude,DEC);
+	GSM.print("A=");GSM.println(lastValid.altitude,2);
 	#endif
 	#if USEPDOP
 	GSM.print("P=");GSM.println(lastValid.pdop,DEC);

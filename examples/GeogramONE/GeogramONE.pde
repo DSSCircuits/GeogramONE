@@ -10,12 +10,13 @@ prog_char googlePrefix[] PROGMEM = "http://maps.google.com/maps?q=";  //30 chara
 prog_char displayTimeDate[] PROGMEM = "+(";
 prog_char googleSuffix[] PROGMEM = ")&z=19"; //Google Earth full zoom
 
+
 AltSoftSerial GSM;
 MAX17043 max17043(&I2c);
 SIM900 sim900(&GSM);
 BMA250 bma250(&I2c);
 geoSmsData smsData;
-PA6C gps(&Serial);
+PA6C gps(&Serial); 
 gpsData lastValid;
 geoFence fence;
 GeogramONE ggo;
@@ -64,7 +65,8 @@ void setup()
 
 void loop()
 {
-	gps.getTheData(&lastValid);
+	if(Serial.available())
+		gps.getTheData(&lastValid);
 	if(call)
 	{
 		if(!sim900.getGeo(&smsData))
@@ -114,20 +116,16 @@ void loop()
 	{
 		static uint8_t breach1Conf = 0;
 		static uint8_t previousSeconds1 = lastValid.seconds;
-		if(fence1 == 1)
-		{  
-			if(!gps.configureFence(1,&fence))
-				fence1 = 2;
-		}
-		if((fence1 == 2) && (lastValid.speedKnots >= BREACHSPEED))
-		{  
+		if((fence1 == 1) && (lastValid.speedKnots >= BREACHSPEED))
+		{
+			gps.configureFence(1,&fence);
 			if(!gps.geoFenceDistance(&lastValid, &fence))
 			{
 				if(lastValid.seconds != previousSeconds1)
 					breach1Conf++;
 				if(breach1Conf > BREACHREPS)
 				{
-					fence1 = 3;
+					fence1 = 2;
 					breach1Conf = 0;
 				}
 				previousSeconds1 = lastValid.seconds;
@@ -137,7 +135,7 @@ void loop()
 		}
 		else
 			breach1Conf = 0;
-		if(fence1 == 3)
+		if(fence1 == 2)
 		{  
 			if(!sim900.sendMessage(2,smsData.smsNumber,NULL,FENCE1MSG))
 				fence1 = 0;
@@ -147,20 +145,16 @@ void loop()
 	{
 		static uint8_t breach2Conf = 0;
 		static uint8_t previousSeconds2 = lastValid.seconds;
-		if(fence2 == 1)
+		if((fence2 == 1) && (lastValid.speedKnots >= BREACHSPEED))
 		{  
-			if(!gps.configureFence(2,&fence))
-				fence2 = 2;
-		}
-		if((fence2 == 2) && (lastValid.speedKnots >= BREACHSPEED))
-		{  
+			gps.configureFence(2,&fence);
 			if(!gps.geoFenceDistance(&lastValid, &fence))
 			{
 				if(lastValid.seconds != previousSeconds2)
 					breach2Conf++;
 				if(breach2Conf > BREACHREPS)
 				{
-					fence2 = 3;
+					fence2 = 2;
 					breach2Conf = 0;
 				}
 				previousSeconds2 = lastValid.seconds;
@@ -170,7 +164,7 @@ void loop()
 		}
 		else
 			breach2Conf = 0;
-		if(fence2 == 3)
+		if(fence2 == 2)
 		{  
 			if(!sim900.sendMessage(2,smsData.smsNumber,NULL,FENCE2MSG))
 				fence2 = 0;
@@ -180,20 +174,16 @@ void loop()
 	{
 		static uint8_t breach3Conf = 0;
 		static uint8_t previousSeconds3 = lastValid.seconds;
-		if(fence3 == 1)
+		if((fence3 == 1) && (lastValid.speedKnots >= BREACHSPEED))
 		{  
-			if(!gps.configureFence(3,&fence))
-				fence3 = 2;
-		}
-		if((fence3 == 2) && (lastValid.speedKnots >= BREACHSPEED))
-		{  
+			gps.configureFence(3,&fence);
 			if(!gps.geoFenceDistance(&lastValid, &fence))
 			{
 				if(lastValid.seconds != previousSeconds3)
 					breach3Conf++;
 				if(breach3Conf > BREACHREPS)
 				{
-					fence3 = 3;
+					fence3 = 2;
 					breach3Conf = 0;
 				}
 				previousSeconds3 = lastValid.seconds;
@@ -203,7 +193,7 @@ void loop()
 		}
 		else
 			breach3Conf = 0;
-		if(fence3 == 3)
+		if(fence3 == 2)
 		{  
 			if(!sim900.sendMessage(2,smsData.smsNumber,NULL,FENCE3MSG))
 				fence3 = 0;

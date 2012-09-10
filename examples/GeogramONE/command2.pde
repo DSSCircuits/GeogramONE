@@ -6,6 +6,7 @@
 uint8_t command2()
 {
 	uint8_t cmd;
+	uint8_t initFence = 1;
 	char *ptr = NULL;
 	char *str = NULL;
 	ptr = strtok_r(smsData.smsCmdString,".",&str); 
@@ -18,9 +19,15 @@ uint8_t command2()
 		{
 			uint8_t offset = 0;
 			if(cmd == 2)
+			{
 				offset = 15;
+				initFence = 2;
+			}
 			if(cmd == 3)
+			{
 				offset = 30;
+				initFence = 3;
+			}
 			ptr = strtok_r(NULL,".",&str); 
 			cmd = atoi(ptr) & 0x01; // deactivate 0 or activate 1
 			EEPROM.write(ACTIVE1 + offset,cmd);
@@ -42,22 +49,29 @@ uint8_t command2()
 			break;
 		case 20 :
 			EEPROM.write(ACTIVE2,0);
+			initFence = 2;
 			break;
 		case 21 :
 			EEPROM.write(ACTIVE2,1);
+			initFence = 2;
 			break;
 		case 30 :
 			EEPROM.write(ACTIVE3,0);
+			initFence = 3;
 			break;
 		case 31 :
 			EEPROM.write(ACTIVE3,1);
+			initFence = 3;
 			break;
 		default :
 			return 1;
 			break;
 	}
-	gps.isFenceActive(1, &fence1); 
-	gps.isFenceActive(2, &fence2); 
-	gps.isFenceActive(3, &fence3);
+	if(initFence == 1)
+		gps.isFenceActive(1, &fence1); 
+	if(initFence == 2)
+		gps.isFenceActive(2, &fence2); 
+	if(initFence == 3)
+		gps.isFenceActive(3, &fence3);
 }
 
