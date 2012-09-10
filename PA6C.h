@@ -23,7 +23,7 @@
 #define USEHDOP				1
 #define USEVDOP				0
 #define USEPDOP				1
-#define USEALTITUDE			0
+#define USEALTITUDE			1
 #define USESPEEDKNOTS		1
 #define USECOURSE			1
 #define USEMODE2			1
@@ -37,15 +37,15 @@
 #define USERMCSTATUS		0
 
 #define GPSTIMEOUT			1100
-#define TIMEZONE			-4
-#define MPHORKPH			1	//0 - use kph, 1 - use mph
+
 #define KNOTSTOMPH			1.15078
 #define KNOTSTOKPH			1.852
 #define METERSTOFEET		3.2808
 
-//#define NEWTIME				0
-#define AMPM				0   // 0 - am/pm,  1 - 24 hour format
-
+/*****EEPROM ADDRESS LOCATIONS*******/
+#define TIMEZONE				152   //use -4 for EST
+#define AMPM					153   // 0 - am/pm,  1 - 24 hour format
+#define ENGMETRIC				154   // 0 - English (mph, ft, etc...), 1 = Metric (kph, m, etc...)
 #define ACTIVE1					100
 #define ACTIVE2					114
 #define ACTIVE3					128
@@ -96,21 +96,13 @@ struct date
 
 struct gpsData
 {
-//#if NEWTIME
-//	long utcTime;
-//#else
 	uint8_t hour;
 	uint8_t minute;
 	uint8_t seconds;
 	char amPM[1];
-//#endif
-//#if NEWTIME
-//	long date;
-//#else
 	uint8_t month;
 	uint8_t day;
 	uint16_t year;
-//#endif
 	long latitude;
 	long longitude;
 #if USEALTITUDE

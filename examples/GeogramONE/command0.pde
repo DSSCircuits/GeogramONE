@@ -11,9 +11,8 @@ uint8_t command0(uint8_t *cmd0)  //send coordinates
 	GSM.print(lastValid.minute,DEC);
 	GSM.print(":");
 	GSM.print(lastValid.seconds,DEC);
-	#if !AMPM
-	GSM.print(lastValid.amPM[0]);
-	#endif
+	if(EEPROM.read(AMPM) & 0x01)
+		GSM.print(lastValid.amPM[0]);
 	GSM.print(",");
 	GSM.print(lastValid.month,DEC);
 	GSM.print("/");
@@ -26,7 +25,7 @@ uint8_t command0(uint8_t *cmd0)  //send coordinates
 	GSM.print("Sa=");GSM.println(lastValid.satellitesUsed,DEC);
 	#endif
 	#if USEALTITUDE
-	GSM.print("A=");GSM.println(last.altitude,DEC);
+	GSM.print("A=");GSM.println(lastValid.altitude,DEC);
 	#endif
 	#if USEPDOP
 	GSM.print("P=");GSM.println(lastValid.pdop,DEC);

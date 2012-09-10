@@ -167,27 +167,24 @@ uint8_t PA6C::getGPRMC(GPS *gps, gpsData *currentPosition)
 			case 3 : 
 				if(!nextField(gps))
 				{
-					#if NEWTIME
-					currentPosition->utcTime = atol(gps->field);
-					#else
 					currentPosition->seconds = atol(gps->field)%100;
 					currentPosition->minute = (atol(gps->field)%10000)/100;
-					currentPosition->hour = (atol(gps->field)/10000)+TIMEZONE+24;
+					currentPosition->hour = (atol(gps->field)/10000)+((int8_t)(EEPROM.read(TIMEZONE)))+24;
 					if(currentPosition->hour == 24)
 						currentPosition->hour = 0;
 					if(currentPosition->hour > 24)
 						currentPosition->hour -= 24;
 					if(currentPosition->hour >= 12)
 					{
-						#if !AMPM
-						if(currentPosition->hour > 12)
-							currentPosition->hour -= 12;
-						#endif
+						if(EEPROM.read(AMPM) & 0x01)
+						{
+							if(currentPosition->hour > 12)
+								currentPosition->hour -= 12;
+						}
 						currentPosition->amPM[0] = 'p';
 					}
 					else
 						currentPosition->amPM[0] = 'a';
-					#endif
 				}
 				continue;
 				break;
@@ -243,7 +240,7 @@ uint8_t PA6C::getGPRMC(GPS *gps, gpsData *currentPosition)
 				{
 					#if USESPEEDKNOTS
 					float spK = atof(gps->field);
-					if(MPHORKPH)
+					if(!(EEPROM.read(ENGMETRIC) & 0x01))
 						spK *= KNOTSTOMPH;
 					else
 						spK *= KNOTSTOKPH;
@@ -264,13 +261,9 @@ uint8_t PA6C::getGPRMC(GPS *gps, gpsData *currentPosition)
 			case 11 :
 				if(!nextField(gps))
 				{
-					#if NEWTIME
-					currentPosition->date = atol(gps->field);
-					#else
 					currentPosition->year = atol(gps->field)%100;
 					currentPosition->month = (atol(gps->field)%10000)/100;
 					currentPosition->day = atol(gps->field)/10000;
-					#endif
 				}
 				continue;
 				break;
@@ -352,6 +345,8 @@ uint8_t PA6C::getGPGGA(GPS *gps, gpsData *currentPosition)
 				{
 					#if USEALTITUDE
 					currentPosition->altitude = atof(gps->field);
+					if(!(EEPROM.read(ENGMETRIC) & 0x01))
+						currentPosition->altitude *= METERSTOFEET;
 					#endif
 				}
 				continue;
@@ -696,9 +691,8 @@ uint8_t PA6C::geoFenceDistance(gpsData *last, geoFence *fence)  // was originall
 	float c = 2 * atan2(sqrt(a), sqrt(1 - a)); 
 	unsigned long d = (unsigned long)(R * c * 1000UL);
 	//float d = (R * c);
-	#if MPHORKPH
+	if(!(EEPROM.read(ENGMETRIC) & 0x01))
 		d *= METERSTOFEET;
-	#endif
 	if(!fence->inOut) //inside fence
 	{
 		if( d > fence->radius )
