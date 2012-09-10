@@ -27,7 +27,6 @@ PA6C::PA6C(HardwareSerial *ser)
 	gpsSerial = ser;
 }
 
-
 uint8_t PA6C::init(unsigned long baudRate)
 {
 	gpsSerial->begin(baudRate);
@@ -136,6 +135,8 @@ uint8_t PA6C::getTheData(gpsData *lastKnown)
 			#endif
 			*lastKnown = current;
 		}
+		delay(5); //do this to wait out the GPVTG data
+		gpsSerial->flush(); //get rid of the GPVTG data
 		return 0; //new data available
 	}
 	return 1;

@@ -78,6 +78,13 @@ struct geoFence
 	float longitude;
 	unsigned long radius;
 };
+struct configVar
+{
+	bool engMetric;
+	bool amPm;
+	int8_t timeZone;
+};
+
 
 struct time
 {

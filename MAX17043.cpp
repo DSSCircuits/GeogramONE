@@ -74,7 +74,7 @@ uint8_t MAX17043::setAlertLevel(uint8_t batteryLevel)   //saves as actual percen
 	return(i2c->write(FUELGAUGE,0x0C,configRegister,2));
 }
 
-uint8_t MAX17043::batteryAlert(uint8_t setAlert)
+uint8_t MAX17043::batteryAlert(uint8_t setAlert) // going to do away with this
 {
 	if(!setAlert)
 	{
@@ -109,7 +109,7 @@ void MAX17043::configureBatteryAlert(uint8_t setAlert)
 	}
 }
 
-uint8_t MAX17043::saveAlertLevel(uint8_t intLevel)
+uint8_t MAX17043::saveAlertLevel(uint8_t intLevel)    //going to do away with this
 {
 	if((intLevel == 0) || (intLevel >= 33))
 		return 1; // level must be between 1 and 32%

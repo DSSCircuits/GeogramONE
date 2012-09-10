@@ -8,11 +8,13 @@ template <class T> int EEPROM_writeAnything(int ee, const T& value)
         EEPROM.write(ee++, *p++);
     return i;
 }
- 
+
+
 
 GeogramONE::GeogramONE()
 {
 }
+
 
 void GeogramONE::goToSleep(uint8_t whichMode)
 {
