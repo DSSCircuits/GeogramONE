@@ -113,22 +113,30 @@ void loop()
 	if(fence1)
 	{
 		static uint8_t breach1Conf = 0;
+		static uint8_t previousSeconds1 = lastValid.seconds;
 		if(fence1 == 1)
 		{  
 			if(!gps.configureFence(1,&fence))
 				fence1 = 2;
 		}
-		if((fence1 == 2) && (lastValid.speedKnots))
+		if((fence1 == 2) && (lastValid.speedKnots >= BREACHSPEED))
 		{  
 			if(!gps.geoFenceDistance(&lastValid, &fence))
 			{
-				breach1Conf++;
+				if(lastValid.seconds != previousSeconds1)
+					breach1Conf++;
 				if(breach1Conf > BREACHREPS)
+				{
 					fence1 = 3;
+					breach1Conf = 0;
+				}
+				previousSeconds1 = lastValid.seconds;
 			}
 			else
 				breach1Conf = 0;
 		}
+		else
+			breach1Conf = 0;
 		if(fence1 == 3)
 		{  
 			if(!sim900.sendMessage(2,smsData.smsNumber,NULL,FENCE1MSG))
@@ -138,51 +146,67 @@ void loop()
 	if(fence2)
 	{
 		static uint8_t breach2Conf = 0;
+		static uint8_t previousSeconds2 = lastValid.seconds;
 		if(fence2 == 1)
 		{  
 			if(!gps.configureFence(2,&fence))
 				fence2 = 2;
 		}
-		if((fence2 == 2) && (lastValid.speedKnots))
+		if((fence2 == 2) && (lastValid.speedKnots >= BREACHSPEED))
 		{  
 			if(!gps.geoFenceDistance(&lastValid, &fence))
 			{
-				breach2Conf++;
+				if(lastValid.seconds != previousSeconds2)
+					breach2Conf++;
 				if(breach2Conf > BREACHREPS)
+				{
 					fence2 = 3;
+					breach2Conf = 0;
+				}
+				previousSeconds2 = lastValid.seconds;
 			}
 			else
 				breach2Conf = 0;
 		}
+		else
+			breach2Conf = 0;
 		if(fence2 == 3)
 		{  
 			if(!sim900.sendMessage(2,smsData.smsNumber,NULL,FENCE2MSG))
 				fence2 = 0;
 		}
-	}  
+	}	
 	if(fence3)
 	{
 		static uint8_t breach3Conf = 0;
+		static uint8_t previousSeconds3 = lastValid.seconds;
 		if(fence3 == 1)
 		{  
 			if(!gps.configureFence(3,&fence))
 				fence3 = 2;
 		}
-		if((fence3 == 2) && (lastValid.speedKnots))
+		if((fence3 == 2) && (lastValid.speedKnots >= BREACHSPEED))
 		{  
 			if(!gps.geoFenceDistance(&lastValid, &fence))
 			{
-				breach3Conf++;
+				if(lastValid.seconds != previousSeconds3)
+					breach3Conf++;
 				if(breach3Conf > BREACHREPS)
+				{
 					fence3 = 3;
+					breach3Conf = 0;
+				}
+				previousSeconds3 = lastValid.seconds;
 			}
 			else
 				breach3Conf = 0;
 		}
+		else
+			breach3Conf = 0;
 		if(fence3 == 3)
 		{  
 			if(!sim900.sendMessage(2,smsData.smsNumber,NULL,FENCE3MSG))
 				fence3 = 0;
 		}
-	}  
+	}
 } 

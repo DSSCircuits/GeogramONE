@@ -43,7 +43,7 @@
 #define KNOTSTOKPH			1.852
 #define METERSTOFEET		3.2808
 
-#define NEWTIME				0
+//#define NEWTIME				0
 #define AMPM				0   // 0 - am/pm,  1 - 24 hour format
 
 #define ACTIVE1					100
@@ -64,7 +64,10 @@
 #define LONGITUDE1				111
 #define LONGITUDE2				126
 #define LONGITUDE3				141
+
+//Fence algortithm parameters
 #define BREACHREPS				10
+#define BREACHSPEED				2
 
 
 struct geoFence
@@ -93,21 +96,21 @@ struct date
 
 struct gpsData
 {
-#if NEWTIME
-	long utcTime;
-#else
+//#if NEWTIME
+//	long utcTime;
+//#else
 	uint8_t hour;
 	uint8_t minute;
 	uint8_t seconds;
 	char amPM[1];
-#endif
-#if NEWTIME
-	long date;
-#else
+//#endif
+//#if NEWTIME
+//	long date;
+//#else
 	uint8_t month;
 	uint8_t day;
 	uint16_t year;
-#endif
+//#endif
 	long latitude;
 	long longitude;
 #if USEALTITUDE

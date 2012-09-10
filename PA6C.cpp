@@ -40,7 +40,7 @@ uint8_t PA6C::saveCoordinates(gpsData *coord)
 		return 0;
 	else
 		return 1;
-	#else
+	#else USEPOSITIONFIXIND
 		return 0;
 	#endif
 }
@@ -320,9 +320,18 @@ uint8_t PA6C::getGPGGA(GPS *gps, gpsData *currentPosition)
 				getSentenceId(gps, GPGGA);
 				continue;
 				break;
-			case 3 : case 4 : case 5 : case 6 :
+			case 3 : case 4 : case 5 : 
 			case 7 : case 8 :
 				nextField(gps);
+				continue;
+				break;
+			case 6 :
+				if(!nextField(gps))
+				{
+					#if USEPOSITIONFIXIND
+					currentPosition->positionFixInd = atoi(gps->field);
+					#endif
+				}
 				continue;
 				break;
 			case 9 : 
