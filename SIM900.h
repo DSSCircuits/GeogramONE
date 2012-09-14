@@ -51,6 +51,7 @@ struct rawSimData
     char smsTime[11];
 };*/
 
+
 struct simSmsData
 {
     char smsNumber[39];
