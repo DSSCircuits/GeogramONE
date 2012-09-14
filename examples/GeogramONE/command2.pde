@@ -68,10 +68,11 @@ uint8_t command2()
 			break;
 	}
 	if(initFence == 1)
-		gps.isFenceActive(1, &fence1); 
+		ggo.getFenceActive(1, &fence1); 
 	if(initFence == 2)
-		gps.isFenceActive(2, &fence2); 
+		ggo.getFenceActive(2, &fence2); 
 	if(initFence == 3)
-		gps.isFenceActive(3, &fence3);
+		ggo.getFenceActive(3, &fence3);
+	return 0;
 }
 
