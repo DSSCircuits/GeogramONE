@@ -1,5 +1,4 @@
 #include <I2C.h>
-#include <EEPROM.h>
 
 #ifndef BMA250_h
 #define BMA250_h
@@ -11,7 +10,7 @@
 #endif
 
 
-#define BMA_ADD             0x18
+#define BMA_ADD    (uint8_t)0x18
 #define DELAY               64000
 
 #define BW7P81              0x08 //7.81Hz bandwith
@@ -29,15 +28,34 @@
 #define GSEL8				0x08 //0x03 - 2g, 0x05 - 4, 0x08 - 8g, 0x0C - 16g
 #define GSEL16				0x0C //0x03 - 2g, 0x05 - 4, 0x08 - 8g, 0x0C - 16g
 
+struct registersBMA250
+{
+	uint8_t zeroF;
+	uint8_t oneZero;
+	uint8_t oneOne;
+	uint8_t oneSix;
+	uint8_t oneSeven;
+	uint8_t oneNine;
+	uint8_t oneA;
+	uint8_t oneB;
+	uint8_t twoZero;
+	uint8_t twoOne;
+	uint8_t twoFive;
+	uint8_t twoSix;
+	uint8_t twoSeven;
+	uint8_t twoEight;
+};
+
 class BMA250
 {
 	public:
 		BMA250(I2C *iic);
-		uint8_t init(uint8_t, uint16_t);
-		uint8_t activateMotionDetection();
-		uint8_t highG();
-		uint8_t anyMotion();
-		uint8_t disableInterrupts();
+		void init(uint8_t, uint16_t);
+		void configureMotion();
+		void configureInterrupts();
+		void enableInterrupts();
+		void disableInterrupts();
+		registersBMA250 config;
 	private:
 		I2C *i2c;
 };
