@@ -25,7 +25,7 @@ uint8_t command5(uint8_t *cmd5, volatile uint8_t *opt1, volatile uint8_t *opt2, 
 	{
 		gps.sleepGPS();
 		sim900.powerDownGSM();
-		bma250.anyMotion();
+		bma250.enableInterrupts();
 		*cmd5 = 4;
 		onOffTimer = millis();
 	}
