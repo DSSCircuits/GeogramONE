@@ -1,23 +1,5 @@
 #include "PA6C.h"
 
-template <class T> int EEPROM_writeAnything(int ee, const T& value)
-{
-    const byte* p = (const byte*)(const void*)&value;
-    unsigned int i;
-    for (i = 0; i < sizeof(value); i++)
-        EEPROM.write(ee++, *p++);
-    return i;
-}
-
-template <class T> int EEPROM_readAnything(int ee, T& value)
-{
-    byte* p = (byte*)(void*)&value;
-    unsigned int i;
-    for (i = 0; i < sizeof(value); i++)
-		*p++ = EEPROM.read(ee++);
-    return i;
-}
-
 
 prog_char progmemStandbyGPS[] PROGMEM = "$PMTK161,0*28";  //13 characters
 
@@ -170,14 +152,14 @@ uint8_t PA6C::getGPRMC(GPS *gps, gpsData *currentPosition)
 				{
 					currentPosition->seconds = atol(gps->field)%100;
 					currentPosition->minute = (atol(gps->field)%10000)/100;
-					currentPosition->hour = (atol(gps->field)/10000)+((int8_t)(EEPROM.read(TIMEZONE)))+24;
+					currentPosition->hour = (atol(gps->field)/10000)+(settings.timeZone)+24;
 					if(currentPosition->hour == 24)
 						currentPosition->hour = 0;
 					if(currentPosition->hour > 24)
 						currentPosition->hour -= 24;
 					if(currentPosition->hour >= 12)
 					{
-						if(EEPROM.read(AMPM) & 0x01)
+						if(!settings.amPm)
 						{
 							if(currentPosition->hour > 12)
 								currentPosition->hour -= 12;
@@ -241,7 +223,7 @@ uint8_t PA6C::getGPRMC(GPS *gps, gpsData *currentPosition)
 				{
 					#if USESPEEDKNOTS
 					float spK = atof(gps->field);
-					if(!(EEPROM.read(ENGMETRIC) & 0x01))
+					if(!settings.engMetric)
 						spK *= KNOTSTOMPH;
 					else
 						spK *= KNOTSTOKPH;
@@ -346,7 +328,7 @@ uint8_t PA6C::getGPGGA(GPS *gps, gpsData *currentPosition)
 				{
 					#if USEALTITUDE
 					currentPosition->altitude = atof(gps->field);
-					if(!(EEPROM.read(ENGMETRIC) & 0x01))
+					if(!settings.engMetric)
 						currentPosition->altitude *= METERSTOFEET;
 					#endif
 				}
@@ -660,7 +642,6 @@ uint8_t PA6C::sleepGPS()
 	while(millis() - timeOut <= GPSTIMEOUT)
 	{
 		if(gpsSerial->available() <= 30);
-		//if(getTheData() == 2)
 		{
 		  return(0);
 		}
@@ -692,7 +673,7 @@ uint8_t PA6C::geoFenceDistance(gpsData *last, geoFence *fence)  // was originall
 	float c = 2 * atan2(sqrt(a), sqrt(1 - a)); 
 	unsigned long d = (unsigned long)(R * c * 1000UL);
 	//float d = (R * c);
-	if(!(EEPROM.read(ENGMETRIC) & 0x01))
+	if(!settings.engMetric)
 		d *= METERSTOFEET;
 	if(!fence->inOut) //inside fence
 	{
@@ -711,42 +692,7 @@ uint8_t PA6C::geoFenceDistance(gpsData *last, geoFence *fence)  // was originall
 			return 1;
 	}
 }
-
-uint8_t PA6C::configureFence(uint8_t fenceNumber, geoFence *fence)
-{
-	uint8_t offset = 0;
-	if(!fenceNumber || (fenceNumber > 3) )
-	{
-		return 1;
-	}
-	if(fenceNumber == 2)
-		offset += 15;
-	if(fenceNumber == 3)
-		offset += 30;
-	EEPROM_readAnything((INOUT1 + offset), fence->inOut);
-	EEPROM_readAnything((RADIUS1 + offset), fence->radius);
-	EEPROM_readAnything((LATITUDE1 + offset), fence->latitude);
-	EEPROM_readAnything((LONGITUDE1 + offset), fence->longitude);
-	return 0;
-}
-
-uint8_t PA6C::isFenceActive(uint8_t fenceNumber, uint8_t *fenceVar)
-{
-	uint8_t offset = 0;
-	if(!fenceNumber || (fenceNumber > 3) )
-	{
-		*fenceVar = 0;
-		return 1;
-	}
-	if(fenceNumber == 2)
-		offset += 15;
-	if(fenceNumber == 3)
-		offset += 30;
-	*fenceVar = EEPROM.read(ACTIVE1 + offset);
-	return 0;
-}
 	
-		
 
 #if USECOURSE
 void PA6C::directionOfTravel(gpsData *current)

@@ -42,28 +42,6 @@
 #define KNOTSTOKPH			1.852
 #define METERSTOFEET		3.2808
 
-/*****EEPROM ADDRESS LOCATIONS*******/
-#define TIMEZONE				152   //use -4 for EST
-#define AMPM					153   // 0 - am/pm,  1 - 24 hour format
-#define ENGMETRIC				154   // 0 - English (mph, ft, etc...), 1 = Metric (kph, m, etc...)
-#define ACTIVE1					100
-#define ACTIVE2					114
-#define ACTIVE3					128
-#define RESET1					101
-#define RESET2					116
-#define RESET3					131
-#define INOUT1					102
-#define INOUT2					117
-#define INOUT3					132
-#define RADIUS1					103
-#define RADIUS2					118
-#define RADIUS3					133
-#define LATITUDE1				107
-#define LATITUDE2				122
-#define LATITUDE3				137
-#define LONGITUDE1				111
-#define LONGITUDE2				126
-#define LONGITUDE3				141
 
 //Fence algortithm parameters
 #define BREACHREPS				10
@@ -78,6 +56,7 @@ struct geoFence
 	float longitude;
 	unsigned long radius;
 };
+
 struct configVar
 {
 	bool engMetric;
@@ -164,13 +143,12 @@ class PA6C
 {
 	public:
 		PA6C(HardwareSerial *ser);
+		configVar settings;
 		uint8_t getTheData(gpsData *);
 		uint8_t init(unsigned long);
 		uint8_t sleepGPS();
 		uint8_t wakeUpGPS();
 		uint8_t geoFenceDistance(gpsData *, geoFence *);
-		uint8_t configureFence(uint8_t, geoFence *);
-		uint8_t isFenceActive(uint8_t fenceNumber, uint8_t *fenceVar);
 	private:
 		struct GPS
 		{
