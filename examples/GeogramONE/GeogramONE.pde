@@ -10,7 +10,7 @@ prog_char googlePrefix[] PROGMEM = "http://maps.google.com/maps?q=";  //30 chara
 prog_char displayTimeDate[] PROGMEM = "+(";
 prog_char googleSuffix[] PROGMEM = ")&z=19"; //Google Earth full zoom
 
-
+GeogramONE ggo;
 AltSoftSerial GSM;
 MAX17043 max17043(&I2c);
 SIM900 sim900(&GSM);
@@ -19,7 +19,7 @@ geoSmsData smsData;
 PA6C gps(&Serial); 
 gpsData lastValid;
 geoFence fence;
-GeogramONE ggo;
+
 
 uint8_t command5(uint8_t *, volatile uint8_t *opt1 = NULL, volatile uint8_t *opt2 = NULL, volatile uint8_t *opt3 = NULL);
 
@@ -43,12 +43,14 @@ uint32_t timeInterval = 0;
 
 void setup()
 {
+	ggo.configureMAX17043(&max17043.batteryInterruptValue);
+	ggo.configureBMA250(&bma250.config);
+	ggo.configurePA6C(&gps.settings);
 	ggo.init();
 	gps.init(115200);
 	sim900.init(9600);
 	max17043.init(7, 500);
 	bma250.init(3, 500);
-	max17043.initializeFuelGauge();
 	attachInterrupt(0, ringIndicator, FALLING);
 	attachInterrupt(1, movement, FALLING);
 	PCintPort::attachInterrupt(PG_INT, &charger, CHANGE);
@@ -58,9 +60,10 @@ void setup()
 	if(call == 0xFF)
 		call = 0;
 	battery = max17043.getAlertFlag();
-	gps.isFenceActive(1, &fence1); 
-	gps.isFenceActive(2, &fence2); 
-	gps.isFenceActive(3, &fence3); 
+	ggo.getFenceActive(1, &fence1); 
+	ggo.getFenceActive(2, &fence2); 
+	ggo.getFenceActive(3, &fence3);
+	ggo.configureInterval(&timeInterval);
 }
 
 void loop()
@@ -118,7 +121,7 @@ void loop()
 		static uint8_t previousSeconds1 = lastValid.seconds;
 		if((fence1 == 1) && (lastValid.speedKnots >= BREACHSPEED))
 		{
-			gps.configureFence(1,&fence);
+			ggo.configureFence(1,&fence); 
 			if(!gps.geoFenceDistance(&lastValid, &fence))
 			{
 				if(lastValid.seconds != previousSeconds1)
@@ -147,7 +150,7 @@ void loop()
 		static uint8_t previousSeconds2 = lastValid.seconds;
 		if((fence2 == 1) && (lastValid.speedKnots >= BREACHSPEED))
 		{  
-			gps.configureFence(2,&fence);
+			ggo.configureFence(2,&fence);
 			if(!gps.geoFenceDistance(&lastValid, &fence))
 			{
 				if(lastValid.seconds != previousSeconds2)
@@ -176,7 +179,7 @@ void loop()
 		static uint8_t previousSeconds3 = lastValid.seconds;
 		if((fence3 == 1) && (lastValid.speedKnots >= BREACHSPEED))
 		{  
-			gps.configureFence(3,&fence);
+			ggo.configureFence(3,&fence);
 			if(!gps.geoFenceDistance(&lastValid, &fence))
 			{
 				if(lastValid.seconds != previousSeconds3)
