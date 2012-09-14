@@ -6,7 +6,8 @@ uint8_t command1(uint8_t *cmd1) //motion sensing mode
 		case 0x01 :  
 			gps.sleepGPS();
 			sim900.powerDownGSM();
-			bma250.anyMotion();
+		//	bma250.anyMotion();
+			bma250.enableInterrupts();
 			ggo.goToSleep();
 			gps.wakeUpGPS();
 			sim900.init(9600);
