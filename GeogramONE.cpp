@@ -63,9 +63,11 @@ void GeogramONE::goToSleep(uint8_t whichMode)
 	PCICR = pcicrReg; //restore Pin Change Interrupt register
 }
 
-uint8_t GeogramONE::init()
+void GeogramONE::init()
 {
-	configureIO(2,IOSTATE0); //D2
+	pinMode(PG_INT ,INPUT);
+	digitalWrite(PG_INT ,LOW);
+	configureIO(4,IOSTATE0); //D4
 	configureIO(10,IOSTATE1);//D10
 	configureIO(15,IOSTATE2);//A1
 	configureIO(16,IOSTATE3);//A2
@@ -73,7 +75,7 @@ uint8_t GeogramONE::init()
 	configureIO(20,IOSTATE5);//A6
 }
 
-uint8_t GeogramONE::configureIO(uint8_t pinNumber, uint8_t eepromAddress)
+void GeogramONE::configureIO(uint8_t pinNumber, uint8_t eepromAddress)
 {
 	uint8_t ioConfig = 0;
 	ioConfig = EEPROM.read(eepromAddress);
@@ -81,7 +83,7 @@ uint8_t GeogramONE::configureIO(uint8_t pinNumber, uint8_t eepromAddress)
 	if((ioConfig == 1) || (ioConfig == 5) || (ioConfig == 6) || (ioConfig == 7)){pinMode(pinNumber,INPUT);digitalWrite(pinNumber,HIGH);}
 	if(ioConfig == 2){pinMode(pinNumber,OUTPUT);digitalWrite(pinNumber,LOW);}
 	if(ioConfig == 3){pinMode(pinNumber,OUTPUT);digitalWrite(pinNumber,HIGH);}
-	if(ioConfig == 4){analogReference(DEFAULT);analogRead(pinNumber);}
+	if(ioConfig == 4){analogReference(DEFAULT);analogRead(pinNumber - 14);}
 }
 
 uint8_t GeogramONE::resetTimer2( )
@@ -137,7 +139,7 @@ void GeogramONE::configureBMA250(registersBMA250 *config)
 void GeogramONE::configurePA6C(configVar *settings)
 {
 	EEPROM_readAnything(ENGMETRIC,settings->engMetric);
-	EEPROM_readAnything(AMPM,settings->amPm);
+	EEPROM_readAnything(TIMEFORMAT,settings->timeFormat);
 	EEPROM_readAnything(TIMEZONE,settings->timeZone);
 }
 
@@ -155,6 +157,13 @@ void GeogramONE::configureFence(uint8_t fenceNumber, geoFence *fence)
 	return ;
 }
 
+void GeogramONE::configureBreachParameters(uint8_t *breachSpeed, uint8_t *breachReps)
+{
+	EEPROM_readAnything(BREACHSPEED, breachSpeed);
+	EEPROM_readAnything(BREACHREPS, breachReps);
+}
+
+
 void GeogramONE::getFenceActive(uint8_t fenceNumber, uint8_t *fenceVar)
 {
 	uint8_t offset = 0;
@@ -166,8 +175,11 @@ void GeogramONE::getFenceActive(uint8_t fenceNumber, uint8_t *fenceVar)
 	return ;
 }
 
-void GeogramONE::configureInterval(uint32_t *timeInterval)
+void GeogramONE::configureInterval(uint32_t *timeInterval, uint32_t *sleepTimeOn, uint32_t *sleepTimeOff, uint8_t *sleepTimeConfig)
 {
 	EEPROM_readAnything(SENDINTERVAL,*timeInterval);
+	EEPROM_readAnything(SLEEPTIMEON,*sleepTimeOn);
+	EEPROM_readAnything(SLEEPTIMEOFF,*sleepTimeOff);
+	EEPROM_readAnything(SLEEPTIMECONFIG,*sleepTimeConfig);
 	return;
 }
