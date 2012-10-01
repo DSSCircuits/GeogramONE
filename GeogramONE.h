@@ -32,12 +32,13 @@
 #define FENCE2MSG				275
 #define FENCE3MSG				300
 #define SPEEDMSG				325
+#define GEOGRAMONEID			350
 
 #define BATTERYLOWLEVEL    		88
 #define BATTERYINTONOFF    		89
 
 #define TIMEZONE				147   //use -4 for EST
-#define AMPM					148   // 0 - am/pm,  1 - 24 hour format
+#define TIMEFORMAT				148   // bit 0: 0 - am/pm,  1 - 24 hour format  bit 1: 0 - mm/dd/yy , 1 - yy/mm/dd
 #define ENGMETRIC				149   // 0 - English (mph, ft, etc...), 1 = Metric (kph, m, etc...)
 
 #define ACTIVE1					100
@@ -75,6 +76,13 @@
 #define BMA0X28					163
 
 #define SENDINTERVAL			164
+#define SLEEPTIMEON				168
+#define SLEEPTIMEOFF			172
+#define SLEEPTIMECONFIG			176
+
+#define BREACHSPEED				177
+#define BREACHREPS				178
+#define GEODATAFORMAT			179
 
 #define PG_INT             		14
 
@@ -83,17 +91,18 @@ class GeogramONE
 {
 	public:
 		GeogramONE( );
-		uint8_t init( );
+		void init( );
 		void goToSleep( uint8_t whichMode = 0 );
-		uint8_t configureIO( uint8_t, uint8_t );
+		void configureIO( uint8_t, uint8_t );
 		uint8_t resetTimer2( );
 		uint8_t startTimer2( unsigned long );
 		void configureMAX17043(uint8_t *);
 		void configureBMA250(registersBMA250 *);
 		void configurePA6C(configVar *);
 		void configureFence(uint8_t , geoFence *);
+		void configureBreachParameters(uint8_t *, uint8_t *);
 		void getFenceActive(uint8_t fenceNumber, uint8_t *fenceVar);
-		void configureInterval(uint32_t *);
+		void configureInterval(uint32_t *, uint32_t *, uint32_t *, uint8_t *);
 	private:
 };
 #endif
