@@ -12,6 +12,8 @@ prog_char CPOWD[] PROGMEM 	= "CPOWD=1";	//
 prog_char CMGDA[] PROGMEM 	= "CMGDA=\"DEL ALL\"";	//basic
 prog_char CMEE[] PROGMEM 	= "CMEE=1"; 	//basic
 prog_char CSQ[] PROGMEM 	= "CSQ"; 		//ext
+
+
 const char * myArray[] PROGMEM =
 {
     IPR,	
@@ -136,6 +138,7 @@ uint8_t SIM900::powerOnGSM(){
 uint8_t SIM900::powerDownGSM()
 {
 	char rxBuffer[50];
+	gsmSleepMode2();
 	sendATCommandBasic(CPOWD,rxBuffer,50,CPOWD_TO,0,false);
 	if(!digitalRead(GSMSTATUS))
 	{
