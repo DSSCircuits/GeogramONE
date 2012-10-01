@@ -43,24 +43,19 @@
 #define METERSTOFEET		3.2808
 
 
-//Fence algortithm parameters
-#define BREACHREPS				10
-#define BREACHSPEED				2
-
-
 struct geoFence
 {
 	uint8_t inOut;
 	uint8_t reset;
-	float latitude;
-	float longitude;
+	long latitude;
+	long longitude;
 	unsigned long radius;
 };
 
 struct configVar
 {
 	bool engMetric;
-	bool amPm;
+	uint8_t timeFormat;
 	int8_t timeZone;
 };
 
