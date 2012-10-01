@@ -1,50 +1,57 @@
-uint8_t command5(uint8_t *cmd5, volatile uint8_t *opt1, volatile uint8_t *opt2, volatile uint8_t *opt3)  
+void command5()  
 {
-	static uint32_t timeOn = 0;
-	static uint32_t timeOff = 0;
-	static unsigned long onOffTimer = millis();
-	if( *cmd5 == 1 )
-	{
-		char *ptr = NULL;
-		char *str = NULL;
-		ptr = strtok_r(smsData.smsCmdString,".",&str);
-		timeOn = atol(ptr) * 1000UL;
-		ptr = strtok_r(NULL,".",&str);
-		timeOff = atol(ptr) * 1000UL;
-		if(!timeOn || !timeOff)
-			*cmd5 = 0;
-		else
-			*cmd5 = 2;
-	}
-	if((*cmd5 == 2) && (!opt1) && (!opt2) && (!opt3)) //reset on timer
-	{
-		onOffTimer = millis();
-		*cmd5 = 3;
-	}
-	if((*cmd5 == 3) && (!opt1) && (!opt2) && (!opt3) && ((millis() - onOffTimer) > timeOn))
-	{
-		gps.sleepGPS();
-		sim900.powerDownGSM();
-		bma250.enableInterrupts();
-		*cmd5 = 4;
-		onOffTimer = millis();
-	}
-	if( (*cmd5 == 4) && (!opt1) && (!opt2) && (!opt3))
-	{
-		while((millis() - onOffTimer) < timeOff)
-		{
-			if(opt1 && opt2 && opt3)
-			break;
-		}
-		*cmd5 = 5;
-	}
-	if(*cmd5 == 5)
-	{
-		gps.wakeUpGPS();
-		sim900.init(9600);
-		bma250.disableInterrupts();
-		*cmd5 = 2;
-	}
+	char *ptr = NULL;
+	char *str = NULL;
+	ptr = strtok_r(smsData.smsCmdString,".",&str);
+	sleepTimeOn = atol(ptr) * 1000UL;
+	ptr = strtok_r(NULL,".",&str);
+	sleepTimeOff = atol(ptr) * 1000UL;
+	ptr = strtok_r(NULL,".",&str);
+	sleepTimeConfig = atoi(ptr) & 0x0F;
+	EEPROM_writeAnything(SLEEPTIMEON,sleepTimeOn);
+	EEPROM_writeAnything(SLEEPTIMEOFF,sleepTimeOff);
+	EEPROM_writeAnything(SLEEPTIMECONFIG,sleepTimeConfig);
 }
 
-
+void sleepTimer() 
+{		
+	static unsigned long onOffTimer = millis();
+	if((millis() - onOffTimer) < (sleepTimeOn))
+		return;
+	if((sleepTimeConfig & 0x04) && call) //there is a message waiting do not go to sleep
+	{
+		onOffTimer = millis();
+		return;
+	}
+	if((sleepTimeConfig & 0x02) && move) //there was recent movement do not go to sleep
+	{
+		onOffTimer = millis();
+		move = 0; 
+		return;
+	}	
+	if((sleepTimeConfig & 0x01) && charge) //unit is plugged in and charging do not go to sleep
+	{
+		onOffTimer = millis();
+		return;
+	}
+	gps.sleepGPS();
+	if(!(sleepTimeConfig & 0x04))
+		sim900.powerDownGSM();
+	onOffTimer = millis();
+	while((millis() - onOffTimer) < sleepTimeOff)
+	{
+		if((sleepTimeConfig & 0x04) && call)
+			break;
+		if((sleepTimeConfig & 0x02) && move)
+			break;
+		if((sleepTimeConfig & 0x01) && charge)
+			break;
+	}
+	gps.wakeUpGPS();
+	if(!(sleepTimeConfig & 0x04))
+		sim900.init(9600);
+	if(!(sleepTimeConfig & 0x02))
+		bma250.disableInterrupts();
+	onOffTimer = millis();
+}
+		
