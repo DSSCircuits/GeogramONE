@@ -11,22 +11,34 @@ uint8_t command6()
 		case IOSTATE8: case IOSTATE9: case ACTIVE1: case ACTIVE2: case ACTIVE3: case RESET1: case RESET2: 
 		case RESET3: case INOUT1: case INOUT2: case INOUT3: case BMA0X0F: case BMA0X10: case BMA0X11: 
 		case BMA0X16: case BMA0X17: case BMA0X19: case BMA0X1A: case BMA0X1B: case BMA0X20: case BMA0X21: 
-		case BMA0X25: case BMA0X26: case BMA0X27: case BMA0X28: case AMPM: case ENGMETRIC:
+		case BMA0X25: case BMA0X26: case BMA0X27: case BMA0X28: case TIMEFORMAT: case ENGMETRIC: case SLEEPTIMECONFIG:
+		case BREACHSPEED: case BREACHREPS:
  			ptr = strtok_r(NULL,".",&str);
-			EEPROM.write(eepAdd,(int8_t)atoi(ptr));
+			EEPROM.write(eepAdd,(uint8_t)atoi(ptr));
 			break;
 	//int8_t
 		case TIMEZONE:
 			ptr = strtok_r(NULL,".",&str);
 			EEPROM.write(eepAdd,(int8_t)atoi(ptr));
 			break;
+	//uint16_t
+		case GEODATAFORMAT:
+			ptr = strtok_r(NULL,".",&str);
+			EEPROM_writeAnything(eepAdd,(uint16_t)(atoi(ptr)));
+			break;
 	//unsigned long 
-		case APN: case RADIUS1: case RADIUS2: case RADIUS3: case SENDINTERVAL:
+		case APN: case RADIUS1: case RADIUS2: case RADIUS3: case SENDINTERVAL: case SLEEPTIMEON:
+		case SLEEPTIMEOFF:
 			ptr = strtok_r(NULL,".",&str);
 			EEPROM_writeAnything(eepAdd,(unsigned long)(atol(ptr)));
 			break;
-	//float
+	// long
 		case LATITUDE1: case LATITUDE2: case LATITUDE3: case LONGITUDE1: case LONGITUDE2: case LONGITUDE3:
+			ptr = strtok_r(NULL,".",&str);
+			EEPROM_writeAnything(eepAdd,(long)(atol(ptr)));
+			break;
+	//float
+/*		case LATITUDE1: case LATITUDE2: case LATITUDE3: case LONGITUDE1: case LONGITUDE2: case LONGITUDE3:
 			for(uint8_t dp = 0, c = 0; c < 15; c++)
 			{
 				if(ptr[c] == '.')
@@ -38,7 +50,7 @@ uint8_t command6()
 				}
 			}
 			EEPROM_writeAnything(eepAdd,(float)(atof(ptr)));
-			break;
+			break;*/
 	//string length 4 characters...not including terminating null
 		case PINCODE:
 			ptr = strtok_r(NULL,".",&str);
@@ -60,7 +72,7 @@ uint8_t command6()
 			EEPROM.write(eepAdd + 38,'\0'); 
 			break;
 	//string length 24 characters...not including terminating null
-		case MOTIONMSG: case BATTERYMSG: case FENCE1MSG: case FENCE2MSG: case FENCE3MSG: case SPEEDMSG:
+		case MOTIONMSG: case BATTERYMSG: case FENCE1MSG: case FENCE2MSG: case FENCE3MSG: case SPEEDMSG: case GEOGRAMONEID:
 			ptr = strtok_r(NULL,".",&str);
 			for(uint8_t e = 0; e < 24; e++)
 			{
