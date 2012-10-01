@@ -21,12 +21,10 @@ gpsData lastValid;
 geoFence fence;
 
 
-uint8_t command5(uint8_t *, volatile uint8_t *opt1 = NULL, volatile uint8_t *opt2 = NULL, volatile uint8_t *opt3 = NULL);
-
 volatile uint8_t call;
 volatile uint8_t move;
 volatile uint8_t battery = 0;
-volatile uint8_t charge = 0;
+volatile uint8_t charge = 0x02; // force a read of the charger cable
 
 uint8_t cmd0 = 0;
 uint8_t cmd1 = 0;
@@ -37,8 +35,13 @@ uint8_t fence1 = 0;
 uint8_t fence2 = 0;
 uint8_t fence3 = 0;
 
+uint8_t breachSpeed = 0;
+uint8_t breachReps = 0;
 
 uint32_t timeInterval = 0;
+uint32_t sleepTimeOn = 0;
+uint32_t sleepTimeOff = 0;
+uint8_t sleepTimeConfig = 0;
 
 
 void setup()
@@ -63,7 +66,10 @@ void setup()
 	ggo.getFenceActive(1, &fence1); 
 	ggo.getFenceActive(2, &fence2); 
 	ggo.getFenceActive(3, &fence3);
-	ggo.configureInterval(&timeInterval);
+	ggo.configureBreachParameters(&breachSpeed, &breachReps);
+	ggo.configureInterval(&timeInterval, &sleepTimeOn, &sleepTimeOff, &sleepTimeConfig);
+	if(sleepTimeConfig & 0x02)
+		bma250.enableInterrupts();
 }
 
 void loop()
@@ -89,22 +95,21 @@ void loop()
 				else if(smsData.smsCmdNum == 4)
 					command4();
 				else if(smsData.smsCmdNum == 5)
-					cmd5 = 0x01;
+					command5();
 				else if(smsData.smsCmdNum == 6)
 					command6();
+				else if(smsData.smsCmdNum == 7)
+					command7();
 			}
 		}
 	}
 	if(cmd0)
-		command0(&cmd0);
+		command0();
 	if(cmd1)
-		command1(&cmd1);
+		command1();
 	if(cmd3)
-		command3(&cmd3);
-	if(cmd5)
-		command5(&cmd5, &charge);
-	if(timeInterval)
-		timerMenu(&cmd0);
+		command3();
+	
 	if(battery)
 	{
 		if(!sim900.sendMessage(2,smsData.smsNumber,NULL,BATTERYMSG))
@@ -113,20 +118,20 @@ void loop()
 			max17043.clearAlertFlag();
 		}
 	}
-	if(charge & 0x01)
+	if(charge & 0x02)
 		chargerStatus();
 	if(fence1)
 	{
 		static uint8_t breach1Conf = 0;
 		static uint8_t previousSeconds1 = lastValid.seconds;
-		if((fence1 == 1) && (lastValid.speedKnots >= BREACHSPEED))
+		if((fence1 == 1) && (lastValid.speedKnots >= breachSpeed))
 		{
 			ggo.configureFence(1,&fence); 
 			if(!gps.geoFenceDistance(&lastValid, &fence))
 			{
 				if(lastValid.seconds != previousSeconds1)
 					breach1Conf++;
-				if(breach1Conf > BREACHREPS)
+				if(breach1Conf > breachReps)
 				{
 					fence1 = 2;
 					breach1Conf = 0;
@@ -148,14 +153,14 @@ void loop()
 	{
 		static uint8_t breach2Conf = 0;
 		static uint8_t previousSeconds2 = lastValid.seconds;
-		if((fence2 == 1) && (lastValid.speedKnots >= BREACHSPEED))
+		if((fence2 == 1) && (lastValid.speedKnots >= breachSpeed))
 		{  
 			ggo.configureFence(2,&fence);
 			if(!gps.geoFenceDistance(&lastValid, &fence))
 			{
 				if(lastValid.seconds != previousSeconds2)
 					breach2Conf++;
-				if(breach2Conf > BREACHREPS)
+				if(breach2Conf > breachReps)
 				{
 					fence2 = 2;
 					breach2Conf = 0;
@@ -177,14 +182,14 @@ void loop()
 	{
 		static uint8_t breach3Conf = 0;
 		static uint8_t previousSeconds3 = lastValid.seconds;
-		if((fence3 == 1) && (lastValid.speedKnots >= BREACHSPEED))
+		if((fence3 == 1) && (lastValid.speedKnots >= breachSpeed))
 		{  
 			ggo.configureFence(3,&fence);
 			if(!gps.geoFenceDistance(&lastValid, &fence))
 			{
 				if(lastValid.seconds != previousSeconds3)
 					breach3Conf++;
-				if(breach3Conf > BREACHREPS)
+				if(breach3Conf > breachReps)
 				{
 					fence3 = 2;
 					breach3Conf = 0;
@@ -202,4 +207,8 @@ void loop()
 				fence3 = 0;
 		}
 	}
+	if(timeInterval)
+		timerMenu();
+	if(sleepTimeOn && sleepTimeOff)
+		sleepTimer();
 } 
