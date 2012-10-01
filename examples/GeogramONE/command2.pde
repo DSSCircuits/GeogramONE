@@ -37,8 +37,8 @@ uint8_t command2()
 			ptr = strtok_r(NULL,".",&str);
 			unsigned long cmdLong = atol(ptr); // fence radius
 			EEPROM_writeAnything(RADIUS1 + offset, cmdLong);
-			EEPROM_writeAnything(LATITUDE1 + offset, (float)(((lastValid.latitude%1000000)/600000.0) + (lastValid.latitude/1000000)));
-			EEPROM_writeAnything(LONGITUDE1 + offset, (float)(((lastValid.longitude%1000000)/600000.0) + (lastValid.longitude/1000000)));
+			EEPROM_writeAnything(LATITUDE1 + offset, lastValid.latitude);
+			EEPROM_writeAnything(LONGITUDE1 + offset, lastValid.longitude);
 			}
 			break;
 		case 10 :
