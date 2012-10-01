@@ -10,7 +10,7 @@ void movement()
 
 void charger()
 {
-	charge |= 0x01;
+	charge |= 0x02;
 }
 
 void lowBattery()
@@ -18,11 +18,16 @@ void lowBattery()
 	battery = 1;
 }
 
+/*************************************************************	
+	Procedure to check the status of the USB charging cable. 
+	If the charging cable is plugged in  charge variable 
+	will be a 0x01.  Unplugged, charge variable is 0x00.
+
+**************************************************************/
 void chargerStatus()
 {
 	delay(2);
 	charge = digitalRead(PG_INT);
-	charge <<= 1;
 }
 
 /*int freeRam () 
