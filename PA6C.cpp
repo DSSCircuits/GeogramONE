@@ -159,7 +159,7 @@ uint8_t PA6C::getGPRMC(GPS *gps, gpsData *currentPosition)
 						currentPosition->hour -= 24;
 					if(currentPosition->hour >= 12)
 					{
-						if(!settings.amPm)
+						if(!(settings.timeFormat & 0x01))
 						{
 							if(currentPosition->hour > 12)
 								currentPosition->hour -= 12;
@@ -664,11 +664,20 @@ uint8_t PA6C::geoFenceDistance(gpsData *last, geoFence *fence)  // was originall
 {
 	float ToRad = PI / 180.0;
 	float R = 6378.1;   // radius earth in Km
-	float dLat = (fence->latitude - (((last->latitude%1000000)/600000.0) + (last->latitude/1000000))) * ToRad;
-	float dLon = (fence->longitude - (((last->longitude%1000000)/600000.0) + (last->longitude/1000000))) * ToRad;
+	float dLat = ((((fence->latitude%1000000)/600000.0) + (fence->latitude/1000000)) - 
+				(((last->latitude%1000000)/600000.0) + (last->latitude/1000000))) * ToRad;
+	float dLon = ((((fence->longitude%1000000)/600000.0) + (fence->longitude/1000000)) - 
+				(((last->longitude%1000000)/600000.0) + (last->longitude/1000000))) * ToRad;
 	float a = sin(dLat/2) * sin(dLat/2) +
-		cos((((last->latitude%1000000)/600000.0) + (last->latitude/1000000)) * ToRad) * cos(fence->latitude * ToRad) * 
-		sin(dLon/2) * sin(dLon/2); 
+				cos((((last->latitude%1000000)/600000.0) + (last->latitude/1000000)) * ToRad) * 
+				cos((((fence->latitude%1000000)/600000.0) + (fence->latitude/1000000)) * ToRad) * 
+				sin(dLon/2) * sin(dLon/2); 
+	
+//	float dLat = (fence->latitude - (((last->latitude%1000000)/600000.0) + (last->latitude/1000000))) * ToRad;
+//	float dLon = (fence->longitude - (((last->longitude%1000000)/600000.0) + (last->longitude/1000000))) * ToRad;
+//	float a = sin(dLat/2) * sin(dLat/2) +
+//		cos((((last->latitude%1000000)/600000.0) + (last->latitude/1000000)) * ToRad) * cos(fence->latitude * ToRad) * 
+//		sin(dLon/2) * sin(dLon/2); 
 		
 	float c = 2 * atan2(sqrt(a), sqrt(1 - a)); 
 	unsigned long d = (unsigned long)(R * c * 1000UL);
