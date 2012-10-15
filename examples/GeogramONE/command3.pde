@@ -1,8 +1,6 @@
 
-uint8_t command3() //speed monitoring mode
+void command3() //speed monitoring mode
 {
-	char atCommand[32];
-	static uint16_t speedLimit = 0;
 	static uint16_t maxSpeed = 0;
 	if(cmd3 == 1)
 	{
@@ -10,6 +8,7 @@ uint8_t command3() //speed monitoring mode
 		char *str = NULL;
 		ptr = strtok_r(smsData.smsCmdString,".",&str);
 		speedLimit = atoi(ptr);
+		EEPROM_writeAnything(SPEEDLIMIT,speedLimit);
 		if(!speedLimit)
 			cmd3 = 0;
 		else
@@ -19,18 +18,22 @@ uint8_t command3() //speed monitoring mode
 		cmd3 = 0x03;
 	if(cmd3 == 3)
 	{
-		strcpy_P(atCommand,googlePrefix);
 		if(sim900.sendMessage(0,smsData.smsNumber,NULL))
-			return 1;
-		GSM.println("Speed Alert");
-		GSM.print(atCommand);
-		sim900.printLatLon(&lastValid.latitude,&lastValid.longitude);
-		GSM.print("+(");
-		GSM.print("Me");
-		strcpy_P(atCommand,googleSuffix);
-		GSM.println(atCommand);
+			return;
+		char eepChar;
+		for (uint8_t ep = 0; ep < 25; ep++)
+		{
+			eepChar = EEPROM.read(ep + SPEEDMSG);
+			if(eepChar == '\0')
+				break;
+			else
+				GSM.print(eepChar);
+		}
+		GSM.println();
+		uint16_t speedDataOnly = 0x4818; //Speed, course, battery percent, ID
+		printHTTP(&speedDataOnly, 0);
 		if(sim900.sendMessage(3,NULL,NULL))
-			return 1;
+			return;
 		maxSpeed = lastValid.speedKnots;
 		cmd3 = 0x04;
 	}
@@ -38,24 +41,27 @@ uint8_t command3() //speed monitoring mode
 	{
 		if(lastValid.speedKnots > maxSpeed)
 			maxSpeed = lastValid.speedKnots;
-		if(lastValid.speedKnots <= (uint16_t)(speedLimit - 3))
+		if(lastValid.speedKnots <= (uint16_t)(speedLimit - speedHyst))
 			cmd3 = 0x05;
 	}
 	if(cmd3 == 5)
 	{
-		strcpy_P(atCommand,googlePrefix);
 		if(sim900.sendMessage(0,smsData.smsNumber,NULL))
-			return 1;
-		GSM.print("Max Speed ");
+			return;
+		char eepChar;
+		for (uint8_t ep = 0; ep < 25; ep++)
+		{
+			eepChar = EEPROM.read(ep + MAXSPEEDMSG);
+			if(eepChar == '\0')
+				break;
+			else
+				GSM.print(eepChar);
+		}
 		GSM.println(maxSpeed);
-		GSM.print(atCommand);
-		sim900.printLatLon(&lastValid.latitude,&lastValid.longitude);
-		GSM.print("+(");
-		GSM.print("Me");
-		strcpy_P(atCommand,googleSuffix);
-		GSM.println(atCommand);
+		uint16_t speedDataOnly = 0x4818; //Speed, course, battery percent, ID
+		printHTTP(&speedDataOnly, 0);
 		if(sim900.sendMessage(3,NULL,NULL))
-			return 1;
+			return;
 		cmd3 = 0x02; 
 		maxSpeed = 0;
 	}
