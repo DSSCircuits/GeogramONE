@@ -3,7 +3,7 @@
 // Example: Activate Fence3 with what is stored in EEPROM            xxxx.2.31.
 // Example: Set and Deactivate Fence2, Outside fence, radius 350 ft  xxxx.2.3.0.1.350.
 
-uint8_t command2()
+void command2()
 {
 	uint8_t cmd;
 	uint8_t initFence = 1;
@@ -20,12 +20,12 @@ uint8_t command2()
 			uint8_t offset = 0;
 			if(cmd == 2)
 			{
-				offset = 15;
+				offset = 14;
 				initFence = 2;
 			}
 			if(cmd == 3)
 			{
-				offset = 30;
+				offset = 28;
 				initFence = 3;
 			}
 			ptr = strtok_r(NULL,".",&str); 
@@ -64,7 +64,7 @@ uint8_t command2()
 			initFence = 3;
 			break;
 		default :
-			return 1;
+			return;
 			break;
 	}
 	if(initFence == 1)
@@ -73,6 +73,5 @@ uint8_t command2()
 		ggo.getFenceActive(2, &fence2); 
 	if(initFence == 3)
 		ggo.getFenceActive(3, &fence3);
-	return 0;
 }
 
