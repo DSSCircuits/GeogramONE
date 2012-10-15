@@ -1,4 +1,4 @@
-uint8_t command4()  //send coordinates every so often
+void command4()  //send coordinates every so often
 {
 	char *ptr = NULL;
 	char *str = NULL;
