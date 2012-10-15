@@ -42,15 +42,6 @@
 #define EMAILADDRESS			44
 #define APN						83
 #define RETURNADDCONFIG			87
-/*
-struct rawSimData
-{
-	char smsBody[50];
-    char smsNumber[39];
-    char smsDate[11];
-    char smsTime[11];
-};*/
-
 
 struct simSmsData
 {

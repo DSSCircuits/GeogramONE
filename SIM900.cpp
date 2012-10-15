@@ -89,14 +89,16 @@ uint8_t SIM900::gsmSleepMode0()
 {
 	GSM->println("AT\r\nAT");
 	delay(50);
-	if(!atNoData(7,15,CSCLK_TO,0)){return 0;} //CSCLK0
+	if(!atNoData(7,15,CSCLK_TO,0))
+		return 0; //CSCLK0
 	return 1;
 }
 
 uint8_t SIM900::gsmSleepMode2()
 {
 	GSM->println("AT\r\nAT");
-	if(!atNoData(7,15,CSCLK_TO,2)){return 0;} //CSCLK2
+	if(!atNoData(7,15,CSCLK_TO,2))
+		return 0; //CSCLK2
 	return 1;
 }
 
@@ -110,9 +112,7 @@ uint8_t SIM900::gsmSleepMode2()
 **************************************************************/
 uint8_t SIM900::powerOnGSM(){
 	if(digitalRead(GSMSTATUS))
-	{
 		return 2; //GSM is already powered on
-	} 
 	for(uint8_t i = 0; i < TIMESTORETRY;i++) //was one before
 	{
 		digitalWrite(GSMSWITCH,HIGH); //send signal to turn on
@@ -120,9 +120,7 @@ uint8_t SIM900::powerOnGSM(){
 		digitalWrite(GSMSWITCH,LOW);
 		delay(2300);
 		if(digitalRead(GSMSTATUS))
-		{
 			return 0; //GSM powered on successfully
-		}
 	}
 	return 1; //the GSM did not turn on
 }
@@ -141,9 +139,7 @@ uint8_t SIM900::powerDownGSM()
 	gsmSleepMode2();
 	sendATCommandBasic(CPOWD,rxBuffer,50,CPOWD_TO,0,false);
 	if(!digitalRead(GSMSTATUS))
-	{
 		return 1; //GSM did not power off successfully
-	}
 	return 0;
 }
 
@@ -207,9 +203,7 @@ uint8_t SIM900::checkNetworkRegistration()
 	char rxBuffer[50];
 	sendATCommandBasic(CREG,rxBuffer,50,CREG_TO,0,false);  //check network registration status
 	if(strstr(rxBuffer,",1") != NULL || strstr(rxBuffer,",5") != NULL)
-	{
 		return 0; //GSM is registered on the network
-	}
 	return 1; //GSM is not registered on the network
 }
 
@@ -228,13 +222,15 @@ uint8_t SIM900::checkForMessages()
 
 uint8_t SIM900::deleteMessage(uint8_t msg)
 {
-	if(atNoData(2,15,CMGD_TO,msg)){return 1;} //CMGD
+	if(atNoData(2,15,CMGD_TO,msg))
+		return 1; //CMGD
 	return 0;
 }
 
 uint8_t SIM900::deleteAllMessages()
 {
-	if(atNoData(9,22,CMGDA_TO)){return 1;} //CMGDA
+	if(atNoData(9,22,CMGDA_TO))
+		return 1; //CMGDA
 	return 0;
 }
 
@@ -247,22 +243,16 @@ uint8_t SIM900::readMessageBreakOut(simSmsData *sms, uint8_t msg)
 	if(sendATCommandBasic(CMGR,rxBuffer,100,CMGR_TO,msg,true)){return 1;}
 	if(strlen(rxBuffer) <= 15){return 0xFF;} //if string length is under 15, SIM position was blank
 	if(strstr(rxBuffer,"@")!=NULL)
-	{
 		replyMessageType = 2; //received message type is an email
-	}
 	else
-	{
 		replyMessageType = 1; //received message type is an SMS
-	}
 	ptr = strtok_r(rxBuffer,":",&str); //pull phone number from string
 	if(replyMessageType == 1) //message is an SMS
 	{
 		ptr = strtok_r(NULL,"\"",&str);ptr = strtok_r(NULL,"\"",&str);
 		ptr = strtok_r(NULL,"\"",&str);ptr = strtok_r(NULL,"\"",&str);
 		if (strlen(ptr) < 20)  //if phone number is 20 digits or less then it's OK to use
-		{
 			strcpy(sms->smsNumber,ptr);
-		}
 		ptr = strtok_r(NULL,"\"",&str);ptr = strtok_r(NULL,"\"",&str);
 		ptr = strtok_r(NULL,",",&str);
 		strcpy(sms->smsDate,ptr);
@@ -282,9 +272,7 @@ uint8_t SIM900::readMessageBreakOut(simSmsData *sms, uint8_t msg)
 		ptr = strtok_r(NULL,"\n",&str); 
 		ptr = strtok_r(NULL,"/",&str);
 		if (strlen(ptr) < 39)  //if email address is 39 digits or less then it's OK to use
-		{
 			strcpy(sms->smsNumber,ptr);
-		}
 		ptr = strtok_r(NULL,"/",&str);
 	}
 	ptr = strtok_r(NULL,"\n",&str);
