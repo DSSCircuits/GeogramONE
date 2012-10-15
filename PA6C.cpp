@@ -56,9 +56,7 @@ uint8_t PA6C::getTheData(gpsData *lastKnown)
 				continue;
 			}
 			else if((senStat >= 1) && (senStat <= 17))
-			{
 				continue;
-			}
 			else if(senStat == 0xFF)
 			{
 				gps.dataCollected = 0x07;  // was originally 0x0F, changed for GSV
@@ -74,9 +72,7 @@ uint8_t PA6C::getTheData(gpsData *lastKnown)
 				continue;
 			}
 			else if((senStat >= 1) && (senStat <= 20))
-			{
 				continue;
-			}
 			else if(senStat == 0xFF)
 			{
 				gps.dataCollected = 0x07;
@@ -92,9 +88,7 @@ uint8_t PA6C::getTheData(gpsData *lastKnown)
 				break;
 			}
 			else if((senStat >= 1) && (senStat <= 15))
-			{
 				continue;
-			}
 			else if(senStat == 0xFF)
 			{
 				gps.dataCollected = 0x07;
@@ -164,10 +158,10 @@ uint8_t PA6C::getGPRMC(GPS *gps, gpsData *currentPosition)
 							if(currentPosition->hour > 12)
 								currentPosition->hour -= 12;
 						}
-						currentPosition->amPM[0] = 'p';
+						currentPosition->amPM= 'p';
 					}
 					else
-						currentPosition->amPM[0] = 'a';
+						currentPosition->amPM = 'a';
 				}
 				continue;
 				break;
@@ -194,9 +188,7 @@ uint8_t PA6C::getGPRMC(GPS *gps, gpsData *currentPosition)
 				break;
 			case 6 :
 				if(!nextField(gps))
-				{
 					if(gps->field[0] == 'S'){currentPosition->latitude = -currentPosition->latitude;}
-				}
 				continue;
 				break;
 			case 7 :
@@ -213,9 +205,7 @@ uint8_t PA6C::getGPRMC(GPS *gps, gpsData *currentPosition)
 				break;
 			case 8 :
 				if(!nextField(gps))
-				{
 					if(gps->field[0] == 'W'){currentPosition->longitude = -currentPosition->longitude;}
-				}
 				continue;
 				break;
 			case 9 :
@@ -251,20 +241,17 @@ uint8_t PA6C::getGPRMC(GPS *gps, gpsData *currentPosition)
 				continue;
 				break;
 			case 12 : case 13 :	case 14 :
-				if(!nextField(gps))
-				{
-					#if USERMCSTATUS
-					currentPosition->rmcStatus = gps->field[0];
-					#endif
-				}
+				nextField(gps);
 				continue;
 				break;
 			case 15 : 
 				if(!verifyChecksum(gps))
 				{
 					gps->returnStatus = 1;
-					if(!gps->checksum){return 0;}//if checksum is 0 we pass
-					else{return 0xFF;}
+					if(!gps->checksum)
+						return 0;//if checksum is 0 we pass
+					else
+						return 0xFF;
 				}
 				continue;
 				break;
@@ -342,8 +329,10 @@ uint8_t PA6C::getGPGGA(GPS *gps, gpsData *currentPosition)
 				if(!verifyChecksum(gps))
 				{
 					gps->returnStatus = 1;
-					if(!gps->checksum){return 0;}//if checksum is 0 we pass
-					else{return 0xFF;}
+					if(!gps->checksum)
+						return 0;//if checksum is 0 we pass
+					else
+						return 0xFF;
 				}
 				continue;
 				break;
@@ -399,8 +388,10 @@ uint8_t PA6C::getGPGSV(GPS *gps, gpsData *currentPosition)
 				if(!verifyChecksum(gps))
 				{
 					gps->returnStatus = 1;
-					if(!gps->checksum){return 0;}//if checksum is 0 we pass
-					else{return 0xFF;}
+					if(!gps->checksum)
+						return 0;//if checksum is 0 we pass
+					else
+						return 0xFF;
 				}
 				continue;
 				break;
@@ -489,8 +480,10 @@ uint8_t PA6C::getGPGSA(GPS *gps, gpsData *currentPosition)
 				if(!verifyChecksum(gps))
 				{
 					gps->returnStatus = 1;
-					if(!gps->checksum){return 0;}//if checksum is 0 we pass
-					else{return 0xFF;}
+					if(!gps->checksum)
+						return 0;//if checksum is 0 we pass
+					else
+						return 0xFF;
 				}
 				continue;
 				break;
@@ -524,24 +517,22 @@ uint8_t PA6C::getPMTK001(GPS *gps)
 				break;
 			case 3 :
 				if(!nextField(gps))
-				{
 					pmtk001.p001Cmd = atoi(gps->field);
-				}
 				continue;
 				break;
 			case 4 :
 				if(!nextField(gps))
-				{
 					pmtk001.p001Flag = atoi(gps->field);
-				}
 				continue;
 				break;
 			case 5 : 
 				if(!verifyChecksum(gps))
 				{
 					gps->returnStatus = 1;
-					if(!gps->checksum){return 0;}//if checksum is 0 we pass
-					else{return 0xFF;}
+					if(!gps->checksum)
+						return 0;//if checksum is 0 we pass
+					else
+						return 0xFF;
 				}
 				continue;
 				break;
@@ -642,22 +633,21 @@ uint8_t PA6C::sleepGPS()
 	while(millis() - timeOut <= GPSTIMEOUT)
 	{
 		if(gpsSerial->available() <= 30);
-		{
-		  return(0);
-		}
+			return 0;
 	}
-    return(1);
+    return 1;
 }
 
 uint8_t PA6C::wakeUpGPS()
 {
-  gpsSerial->println("$PMTK000*32");
-  unsigned long timeOut = millis();
-  while (millis() - timeOut <= GPSTIMEOUT) // was 3000 before
-  {
-    if(gpsSerial->available() > 50){return(0);} //was originally 5, changed to 50 to let it wake up
-  }
-  return(1);
+	gpsSerial->println("$PMTK000*32");
+	unsigned long timeOut = millis();
+	while((millis() - timeOut) <= GPSTIMEOUT) // was 3000 before
+	{
+		if(gpsSerial->available() > 50)
+			return 0; //was originally 5, changed to 50 to let it wake up
+	}
+	return 1;
 }
 
 uint8_t PA6C::geoFenceDistance(gpsData *last, geoFence *fence)  // was originally longs and called fLat and fLon
@@ -672,22 +662,13 @@ uint8_t PA6C::geoFenceDistance(gpsData *last, geoFence *fence)  // was originall
 				cos((((last->latitude%1000000)/600000.0) + (last->latitude/1000000)) * ToRad) * 
 				cos((((fence->latitude%1000000)/600000.0) + (fence->latitude/1000000)) * ToRad) * 
 				sin(dLon/2) * sin(dLon/2); 
-	
-//	float dLat = (fence->latitude - (((last->latitude%1000000)/600000.0) + (last->latitude/1000000))) * ToRad;
-//	float dLon = (fence->longitude - (((last->longitude%1000000)/600000.0) + (last->longitude/1000000))) * ToRad;
-//	float a = sin(dLat/2) * sin(dLat/2) +
-//		cos((((last->latitude%1000000)/600000.0) + (last->latitude/1000000)) * ToRad) * cos(fence->latitude * ToRad) * 
-//		sin(dLon/2) * sin(dLon/2); 
-		
 	float c = 2 * atan2(sqrt(a), sqrt(1 - a)); 
 	unsigned long d = (unsigned long)(R * c * 1000UL);
-	//float d = (R * c);
 	if(!settings.engMetric)
 		d *= METERSTOFEET;
 	if(!fence->inOut) //inside fence
 	{
 		if( d > fence->radius )
-		//if(((unsigned long)(d * 1000UL)) > fence->radius )
 			return 0;
 		else
 			return 1;
@@ -695,7 +676,6 @@ uint8_t PA6C::geoFenceDistance(gpsData *last, geoFence *fence)  // was originall
 	if(fence->inOut) //outside fence
 	{
 		if( d < fence->radius )
-		//if(((unsigned long)(d * 1000UL)) < fence->radius )
 			return 0;
 		else
 			return 1;

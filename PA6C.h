@@ -21,7 +21,7 @@
 #define PMTKLOX 			"PMTKLOX"
 
 #define USEHDOP				1
-#define USEVDOP				0
+#define USEVDOP				1
 #define USEPDOP				1
 #define USEALTITUDE			1
 #define USESPEEDKNOTS		1
@@ -29,12 +29,11 @@
 #define USEMODE2			1
 #define USESATINVIEW		0
 #define USESATELLITESUSED	1
-#define USEPOSITIONFIXIND	0
-#define USEGSAMODE1			0
-#define USEVTGMODE			0
-#define USESPEEDKMR			0
-#define USERMCMODE			0
-#define USERMCSTATUS		0
+#define USEPOSITIONFIXIND	1
+#define USEGSAMODE1			1
+#define USEVTGMODE			1
+#define USERMCMODE			1
+#define USERMCSTATUS		1
 
 #define GPSTIMEOUT			1100
 
@@ -65,7 +64,7 @@ struct time
 	uint8_t hour;
 	uint8_t minute;
 	uint8_t seconds;
-	char amPM[1];
+	char amPM;
 };
 struct date
 {
@@ -80,7 +79,7 @@ struct gpsData
 	uint8_t hour;
 	uint8_t minute;
 	uint8_t seconds;
-	char amPM[1];
+	char amPM;
 	uint8_t month;
 	uint8_t day;
 	uint16_t year;
@@ -118,19 +117,19 @@ struct gpsData
 	uint8_t positionFixInd;
 #endif
 #if USEGSAMODE1
-	char gsaMode1[2];
+	char gsaMode1;
 #endif
 #if USEVTGMODE
-	char vtgMode[2];
+	char vtgMode;
 #endif
 #if USESPEEDKMR
 	float speedKmr;
 #endif
 #if USERMCMODE
-	char rmcMode[2];
+	char rmcMode;
 #endif
 #if USERMCSTATUS
-	char rmcStatus[2];
+	char rmcStatus;
 #endif
 };
 
