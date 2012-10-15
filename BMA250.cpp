@@ -17,6 +17,9 @@ void BMA250::init(uint8_t pinNum, uint16_t tOut)
 
 void BMA250::configureMotion()
 {
+	i2c->write(BMA_ADD,(uint8_t)0x11,config.oneOne);
+	i2c->write(BMA_ADD,(uint8_t)0x25,config.twoFive);
+	i2c->write(BMA_ADD,(uint8_t)0x26,config.twoSix);
 	i2c->write(BMA_ADD,(uint8_t)0x0F,config.zeroF);     //GSEL4
 	i2c->write(BMA_ADD,(uint8_t)0x10,config.oneZero);   //BW7P81
 	i2c->write(BMA_ADD,(uint8_t)0x27,config.twoSeven);  //set slope duration to 1 bits
@@ -25,6 +28,9 @@ void BMA250::configureMotion()
 
 void BMA250::configureInterrupts()
 {
+	i2c->write(BMA_ADD,(uint8_t)0x11,config.oneOne);
+	i2c->write(BMA_ADD,(uint8_t)0x25,config.twoFive);
+	i2c->write(BMA_ADD,(uint8_t)0x26,config.twoSix);
 	i2c->write(BMA_ADD,(uint8_t)0x19,config.oneNine);  	//map to INT1
 	i2c->write(BMA_ADD,(uint8_t)0x1A,config.oneA);     	//map to INT1/INT2
 	i2c->write(BMA_ADD,(uint8_t)0x1B,config.oneB);		//map to INT2
