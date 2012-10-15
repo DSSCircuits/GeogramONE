@@ -30,6 +30,16 @@ void chargerStatus()
 	charge = digitalRead(PG_INT);
 }
 
+void d4Interrupt()
+{
+	d4Switch = 0x01;
+}
+
+void d10Interrupt()
+{
+	d10Switch = 0x01;
+}
+
 /*int freeRam () 
 {
 	extern int __heap_start, *__brkval; 
