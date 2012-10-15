@@ -1,3 +1,8 @@
+/*****************************************************************************
+The Geogram ONE is an open source tracking device/development board based off 
+the Arduino platform.  The hardware design and software files are released 
+under CC-SA v3 license.
+*****************************************************************************/
 
 #include <AltSoftSerial.h>
 #include <PinChangeInt.h>
@@ -5,10 +10,6 @@
 #include <EEPROM.h>
 #include <I2C.h>
 #include "eepromAnything.h"
-
-prog_char googlePrefix[] PROGMEM = "http://maps.google.com/maps?q=";  //30 characters
-prog_char displayTimeDate[] PROGMEM = "+(";
-prog_char googleSuffix[] PROGMEM = ")&z=19"; //Google Earth full zoom
 
 GeogramONE ggo;
 AltSoftSerial GSM;
@@ -25,11 +26,12 @@ volatile uint8_t call;
 volatile uint8_t move;
 volatile uint8_t battery = 0;
 volatile uint8_t charge = 0x02; // force a read of the charger cable
+volatile uint8_t d4Switch = 0x00;
+volatile uint8_t d10Switch = 0x00;
 
 uint8_t cmd0 = 0;
 uint8_t cmd1 = 0;
 uint8_t cmd3 = 0;
-uint8_t cmd5 = 0;
 
 uint8_t fence1 = 0;
 uint8_t fence2 = 0;
@@ -42,6 +44,9 @@ uint32_t timeInterval = 0;
 uint32_t sleepTimeOn = 0;
 uint32_t sleepTimeOff = 0;
 uint8_t sleepTimeConfig = 0;
+
+uint8_t speedHyst = 0;
+uint16_t speedLimit = 0;
 
 
 void setup()
@@ -66,16 +71,26 @@ void setup()
 	ggo.getFenceActive(1, &fence1); 
 	ggo.getFenceActive(2, &fence2); 
 	ggo.getFenceActive(3, &fence3);
+	ggo.configureSpeed(&cmd3, &speedHyst, &speedLimit);
 	ggo.configureBreachParameters(&breachSpeed, &breachReps);
 	ggo.configureInterval(&timeInterval, &sleepTimeOn, &sleepTimeOff, &sleepTimeConfig);
 	if(sleepTimeConfig & 0x02)
 		bma250.enableInterrupts();
+	uint8_t swInt = EEPROM.read(IOSTATE0);
+	if(swInt == 0x05)
+		PCintPort::attachInterrupt(4, &d4Interrupt, RISING);
+	if(swInt == 0x06)
+		PCintPort::attachInterrupt(4, &d4Interrupt, FALLING);
+	swInt = EEPROM.read(IOSTATE1);
+	if(swInt == 0x05)
+		PCintPort::attachInterrupt(10, &d10Interrupt, RISING);
+	if(swInt == 0x06)
+		PCintPort::attachInterrupt(10, &d10Interrupt, FALLING);
 }
 
 void loop()
 {
-	if(Serial.available())
-		gps.getTheData(&lastValid);
+	gps.getTheData(&lastValid);
 	if(call)
 	{
 		if(!sim900.getGeo(&smsData))
@@ -109,7 +124,6 @@ void loop()
 		command1();
 	if(cmd3)
 		command3();
-	
 	if(battery)
 	{
 		if(!sim900.sendMessage(2,smsData.smsNumber,NULL,BATTERYMSG))
@@ -211,4 +225,14 @@ void loop()
 		timerMenu();
 	if(sleepTimeOn && sleepTimeOff)
 		sleepTimer();
+	if(d4Switch)
+	{
+		if(!sim900.sendMessage(2,smsData.smsNumber,NULL,D4MSG))
+			d4Switch = 0x00;
+	}
+	if(d10Switch)
+	{
+		if(!sim900.sendMessage(2,smsData.smsNumber,NULL,D10MSG))
+			d10Switch = 0x00;
+	}
 } 
