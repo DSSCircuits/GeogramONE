@@ -639,14 +639,9 @@ void SIM900::printLatLon(long *lat, long *lon)
 {
 	GSM->print(*lat/1000000);
 	GSM->print("+");
-	GSM->print(abs((*lat%1000000)/10000));
-	GSM->print(".");
-	GSM->print(abs(*lat%10000));
+	GSM->print(abs((*lat%1000000)/10000.0),4);
 	GSM->print(",");
 	GSM->print(*lon/1000000);
 	GSM->print("+");
-	GSM->print(abs((*lon%1000000)/10000));
-	GSM->print(".");
-	GSM->print(abs(*lon%10000));
+	GSM->print(abs((*lon%1000000)/10000.0),4);
 }
-
