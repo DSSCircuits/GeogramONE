@@ -27,7 +27,7 @@ void printList(uint16_t *dataFormat, uint8_t rssi)
 			GSM.print("/");
 			GSM.print(lastValid.day,DEC);
 			GSM.print("/");
-			GSM.println(lastValid.year,DEC);
+			GSM.print(lastValid.year,DEC);
 		}
 		else
 		{
@@ -35,7 +35,7 @@ void printList(uint16_t *dataFormat, uint8_t rssi)
 			GSM.print("/");
 			GSM.print(lastValid.month,DEC);
 			GSM.print("/");
-			GSM.println(lastValid.day,DEC);
+			GSM.print(lastValid.day,DEC);
 		}
 		GSM.print(",");
 	}
@@ -46,7 +46,7 @@ void printList(uint16_t *dataFormat, uint8_t rssi)
 		GSM.print(lastValid.minute,DEC);
 		GSM.print(":");
 		GSM.print(lastValid.seconds,DEC);
-		if(tFormat & 0x01)
+		if(!(tFormat & 0x01))
 			GSM.print(lastValid.amPM);
 		GSM.print(",");
 	}
