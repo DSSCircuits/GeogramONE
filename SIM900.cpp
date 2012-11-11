@@ -256,8 +256,10 @@ uint8_t SIM900::readMessageBreakOut(simSmsData *sms, uint8_t msg)
 		ptr = strtok_r(NULL,"\"",&str);ptr = strtok_r(NULL,"\"",&str);
 		ptr = strtok_r(NULL,",",&str);
 		strcpy(sms->smsDate,ptr);
-		ptr = strtok_r(NULL,"-",&str);
+		ptr = strtok_r(NULL,"\"",&str);
 		strcpy(sms->smsTime,ptr);
+		sms->smsTime[8] = '\0';
+		Serial.println(sms->smsTime);
 		ptr = strtok_r(NULL,"\n",&str);
 	}	
 	else if(replyMessageType == 2) //message is an email
@@ -267,8 +269,10 @@ uint8_t SIM900::readMessageBreakOut(simSmsData *sms, uint8_t msg)
 		ptr = strtok_r(NULL,"\"",&str);ptr = strtok_r(NULL,"\"",&str);
 		ptr = strtok_r(NULL,",",&str);
 		strcpy(sms->smsDate,ptr);
-		ptr = strtok_r(NULL,"-",&str);
+		ptr = strtok_r(NULL,"\"",&str);
 		strcpy(sms->smsTime,ptr);
+		sms->smsTime[8] = '\0';
+		Serial.println(sms->smsTime);
 		ptr = strtok_r(NULL,"\n",&str); 
 		ptr = strtok_r(NULL,"/",&str);
 		if (strlen(ptr) < 39)  //if email address is 39 digits or less then it's OK to use

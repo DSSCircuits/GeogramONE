@@ -47,7 +47,7 @@ struct simSmsData
 {
     char smsNumber[39];
     char smsDate[11];
-    char smsTime[11];
+    char smsTime[13];
 	char smsPwd[5];
 	uint8_t smsCmdNum;
 	char smsCmdString[30];
