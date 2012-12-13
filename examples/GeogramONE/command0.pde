@@ -118,7 +118,7 @@ void printList(uint16_t *dataFormat, uint8_t rssi)
 	}
 	if(*dataFormat & 0x1000)
 	{
-		GSM.print(max17043.getBatteryVoltage()/1000.0,2);
+		GSM.print(max17043.getBatteryVoltage()*0.00125,2);
 		GSM.print(",");
 	}
 	if(*dataFormat & 0x2000)
