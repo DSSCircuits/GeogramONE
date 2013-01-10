@@ -85,52 +85,20 @@ struct gpsData
 	uint16_t year;
 	long latitude;
 	long longitude;
-#if USEALTITUDE
 	float altitude;
-#endif
-#if USECOURSE
 	uint16_t course;
 	char courseDirection[3];
-#endif
-#if USESPEEDKNOTS	
 	uint16_t speedKnots;
-#endif
-#if USEHDOP
 	uint16_t hdop;
-#endif
-#if USEVDOP	
 	uint16_t vdop;
-#endif
-#if USEPDOP
 	uint16_t pdop;
-#endif
-#if USEMODE2
 	uint8_t mode2;
-#endif
-#if USESATINVIEW
-	uint8_t satInView;
-#endif
-#if USESATELLITESUSED
     uint8_t satellitesUsed;
-#endif
-#if USEPOSITIONFIXIND
 	uint8_t positionFixInd;
-#endif
-#if USEGSAMODE1
 	char gsaMode1;
-#endif
-#if USEVTGMODE
-	char vtgMode;
-#endif
-#if USESPEEDKMR
 	float speedKmr;
-#endif
-#if USERMCMODE
 	char rmcMode;
-#endif
-#if USERMCSTATUS
 	char rmcStatus;
-#endif
 };
 
 class PA6C
@@ -139,6 +107,7 @@ class PA6C
 		PA6C(HardwareSerial *ser);
 		configVar settings;
 		uint8_t getTheData(gpsData *);
+		uint8_t getTheData2(gpsData *);
 		uint8_t init(unsigned long);
 		uint8_t sleepGPS();
 		uint8_t wakeUpGPS();
@@ -158,19 +127,18 @@ class PA6C
 			uint8_t p001Cmd;
 			uint8_t p001Flag;
 		} pmtk001;
-		uint8_t getGPRMC(GPS *, gpsData *);
+		uint8_t filterData(char *, gpsData *, uint8_t *, uint8_t *)
+/*		uint8_t getGPRMC(GPS *, gpsData *);
 		uint8_t getGPGSV(GPS *, gpsData *);
 		uint8_t getGPGGA(GPS *, gpsData *);
 		uint8_t getGPGSA(GPS *, gpsData *);
-		uint8_t getPMTK001(GPS *);
 		uint8_t nextField(GPS *);
 		uint8_t verifyChecksum(GPS *);
-		uint8_t saveCoordinates(gpsData *);
 		void lookForDollarSign(GPS *);
-		void getSentenceId(GPS *, char *);
-	#if USECOURSE
+		void getSentenceId(GPS *, char *);*/
+		uint8_t getPMTK001(GPS *);
+		uint8_t saveCoordinates(gpsData *);
 		void directionOfTravel(gpsData *);
-	#endif
 		HardwareSerial *gpsSerial;
 };
 

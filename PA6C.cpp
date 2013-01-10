@@ -36,6 +36,217 @@ uint8_t PA6C::saveCoordinates(gpsData *coord)
 		3		No data yet
 		0xFF	Checksum failure, data invalid
 **************************************************************/
+uint8_t PA6C::getTheData2(gpsData *lastKnown)
+{
+	uint8_t returnStatus = 0x01;
+	static bool startNew = false; 
+	static char gpsField[15];
+	static uint8_t charIndex = 0;
+	static uint8_t checksum = 0;
+	static uint8_t checksumR = 0;
+	static uint8_t sentenceIndex = 0x07; //we're only collection 3 sentences
+	static uint8_t sentenceID = 0;
+	static uint8_t fieldID = 0;
+	static gpsData currentPosition;
+	if(!gpsSerial->available()) //no data in the buffer, safe to return
+		return 3;
+	while(gpsSerial->available()) 
+	{
+		gpsField[charIndex] = gpsSerial->read();
+		gpsField[charIndex+1] = '\0';
+		if((gpsField[charIndex] != '$') && (!startNew)) 
+			continue;
+		switch(gpsField[charIndex])
+		{
+			case '$':
+				charIndex = 0;
+				checksum = 0;
+				startNew = true;
+				break;
+			case ',':
+				checksum ^= gpsField[charIndex];
+				gpsField[charIndex] = '\0';
+				charIndex = 0;
+				filterData(gpsField, &currentPosition, &sentenceID, &fieldID); //filter the data
+				break; 
+			case '*':
+				checksumR = checksum;
+				checksum = 0;
+				charIndex = 0;
+				filterData(gpsField, &currentPosition, &sentenceID, &fieldID); //filter the data
+				break;
+			case '\n':
+				break;
+			case '\r':
+				checksum = 0;
+				if((gpsField[0]) >= 48 && (gpsField[0]) <= 57)
+					checksum = (gpsField[0]-48) << 4;
+				else
+					checksum = (gpsField[0]-55) << 4;
+				if((gpsField[1]) >= 48 && (gpsField[1]) <= 57)
+					checksum |= (gpsField[1]-48);
+				else
+					checksum |= (gpsField[1]-55);	
+				if(checksumR != checksum)
+					sentenceIndex = 0x00; //failed checksum no data valid, start over
+				startNew = false;	
+				checksumR = 0;
+				checksum = 0;
+				charIndex = 0;
+				fieldID = 0;
+				break;
+			default:
+				checksum ^= gpsField[charIndex];
+				charIndex++;
+				break;
+		}
+	}
+}
+
+uint8_t PA6C::filterData(char *fieldData, gpsData *current, uint8_t *sID, uint8_t *fID)
+{
+	if(!(*fID))
+	{
+		if(strstr(fieldData,"GGA")!=NULL)
+		{		
+			*sID = 4;
+			*fID++;
+			return;
+		}
+		if(strstr(fieldData,"GSA")!=NULL)
+		{		
+			*sID |= 2;
+			*fID++;
+			return;
+		}
+		if(strstr(fieldData,"GSV")!=NULL)
+			return;
+		if(strstr(fieldData,"RMC")!=NULL)
+		{		
+			*sID |= 1;
+			if(*sID != 0x07)
+			{
+				*sID = 0;
+				*fID = 0;
+			}
+			*fID++;
+			return;
+		}
+		if(strstr(fieldData,"VTG")!=NULL)
+			return;
+		*sID = 0;
+		*fID = 0;
+	}
+	if(!(*sID))
+		*fID = 0;
+	if(*sID == 4)
+	{
+		switch(*fID)
+		{
+			case 6:
+				current->positionFixInd = atoi(fieldData);
+				break;
+			case 7:	
+				current->satellitesUsed = atoi(fieldData);
+				break;
+			case 9:
+				current->altitude = atof(fieldData);
+				break;
+			case 14:
+				*sID = 2;
+				*fID = 0;
+				return;
+				break;
+		}
+		*fID++;
+	}
+	if(*sID == 2)
+	{
+		switch(*fID)
+		{
+			case 1:
+				current->mode1 = fieldData[0];
+				break;
+			case 2:	
+				current->mode2 = atoi(fieldData);
+				break;
+			case 15:
+				current->pdop = (uint16_t)(atof(fieldData)*100);
+				break;
+			case 16:	
+				current->hdop = (uint16_t)(atof(fieldData)*100);
+				break;
+			case 17:
+				current->vdop = (uint16_t)(atof(fieldData)*100);
+				*sID = 1;
+				*fID = 0;
+				return;
+				break;
+		}
+		*fID++;
+	}	
+	if(*sID == 1)
+	{
+		switch(*fID)
+		{
+			case 1:
+				current->seconds = atol(fieldData)%100;
+				current->minute = (atol(fieldData)%10000)/100;
+				current->hour = (atol(fieldData)/10000);
+				break;
+			case 2:
+				current->rmcStatus = fieldData[0];
+				break;
+			case 3:	
+				{
+					char *str = NULL;
+					char *ptr = NULL;
+					ptr = strtok_r(fieldData,".",&str);
+					current->latitude = atol(ptr)*10000;
+					ptr = strtok_r(NULL,"\0",&str);
+					current->latitude += atol(ptr);
+				}
+				break;
+			case 4:	
+				if(fieldData[0] == 'S'){current->latitude = -current->latitude;}
+				break;
+			case 5:
+				{
+					char *str = NULL;
+					char *ptr = NULL;
+					ptr = strtok_r(fieldData,".",&str);
+					current->longitude = atol(ptr)*10000;
+					ptr = strtok_r(NULL,"\0",&str);
+					current->longitude += atol(ptr);
+				}
+				break;
+			case 6:	
+				if(fieldData[0] == 'W'){current->longitude = -current->longitude;}
+				break;
+			case 7:	
+				current->speedKnots = (uint16_t)(atof(fieldData) * 100);
+				break;
+			case 8:	
+				current->course = (uint16_t)(atof(fieldData)*100);
+				break;
+			case 9:	
+				{
+					current->year = atol(fieldData)%100;
+					current->month = (atol(fieldData)%10000)/100;
+					current->day = atol(fieldData)/10000;
+				}
+				break;
+			case 12:
+				*sID = 7;
+				*fID = 0;
+				return;
+				break;
+				
+		}
+		*fID++;
+	}	
+}
+
 uint8_t PA6C::getTheData(gpsData *lastKnown)
 {
 	if(!gpsSerial->available())
@@ -127,7 +338,7 @@ uint8_t PA6C::getTheData(gpsData *lastKnown)
 		3-15	Collecting GPRMC data
 		0xFF	Checksum failure, data invalid
 **************************************************************/
-uint8_t PA6C::getGPRMC(GPS *gps, gpsData *currentPosition)
+/*uint8_t PA6C::getGPRMC(GPS *gps, gpsData *currentPosition)
 {
 	while(gpsSerial->available())
 	{
@@ -258,7 +469,7 @@ uint8_t PA6C::getGPRMC(GPS *gps, gpsData *currentPosition)
 		}
 	}
 	return gps->returnStatus;
-}
+}*/
 			
 /*************************************************************	
 	Procedure to sort and extract GPGGA sentence data
@@ -269,7 +480,7 @@ uint8_t PA6C::getGPRMC(GPS *gps, gpsData *currentPosition)
 		3-17	Collecting GPGGA data
 		0xFF	Checksum failure, data invalid
 **************************************************************/
-uint8_t PA6C::getGPGGA(GPS *gps, gpsData *currentPosition)
+/*uint8_t PA6C::getGPGGA(GPS *gps, gpsData *currentPosition)
 {
 	while(gpsSerial->available())
 	{
@@ -339,7 +550,7 @@ uint8_t PA6C::getGPGGA(GPS *gps, gpsData *currentPosition)
 		}
 	}
 	return gps->returnStatus;
-}
+}*/
 
 /*************************************************************	
 	Procedure to sort and extract GPGSV sentence data
@@ -350,7 +561,7 @@ uint8_t PA6C::getGPGGA(GPS *gps, gpsData *currentPosition)
 		3-17	Collecting GPGSV data
 		0xFF	Checksum failure, data invalid
 **************************************************************/
-uint8_t PA6C::getGPGSV(GPS *gps, gpsData *currentPosition)
+/*uint8_t PA6C::getGPGSV(GPS *gps, gpsData *currentPosition)
 {
 	while(gpsSerial->available())
 	{
@@ -398,9 +609,7 @@ uint8_t PA6C::getGPGSV(GPS *gps, gpsData *currentPosition)
 		}
 	}
 	return gps->returnStatus;
-}
-
-
+}*/
 
 /*************************************************************	
 	Procedure to sort and extract GPGSA sentence data
@@ -411,7 +620,7 @@ uint8_t PA6C::getGPGSV(GPS *gps, gpsData *currentPosition)
 		3-20	Collecting GPGSA data
 		0xFF	Checksum failure, data invalid
 **************************************************************/
-uint8_t PA6C::getGPGSA(GPS *gps, gpsData *currentPosition)
+/*uint8_t PA6C::getGPGSA(GPS *gps, gpsData *currentPosition)
 {
 	while(gpsSerial->available())
 	{
@@ -490,7 +699,7 @@ uint8_t PA6C::getGPGSA(GPS *gps, gpsData *currentPosition)
 		}
 	}
 	return gps->returnStatus;
-}
+}*/
 
 /*************************************************************	
 	Procedure to sort and extract PMTK001 sentence data
@@ -541,18 +750,16 @@ uint8_t PA6C::getPMTK001(GPS *gps)
 	return gps->returnStatus;
 }
 
-
-
-void PA6C::lookForDollarSign(GPS *gpsTemp)
+/*void PA6C::lookForDollarSign(GPS *gpsTemp)
 {
 	if(gpsSerial->read() != '$'){return;} //waiting for $
 	gpsTemp->checksum = 0;
 	gpsTemp->index = 0;
 	gpsTemp->field[gpsTemp->index] = '\0';
 	gpsTemp->returnStatus = 2;
-}
+}*/
 
-void PA6C::getSentenceId(GPS *gpsTemp, char *sId)
+/*void PA6C::getSentenceId(GPS *gpsTemp, char *sId)
 {
 	gpsTemp->field[gpsTemp->index] = gpsSerial->read();
 	gpsTemp->checksum ^= gpsTemp->field[gpsTemp->index];
@@ -572,9 +779,9 @@ void PA6C::getSentenceId(GPS *gpsTemp, char *sId)
 	}
 	gpsTemp->index = 0;
 	gpsTemp->field[gpsTemp->index] = '\0';
-}
+}*/
 
-uint8_t PA6C::nextField(GPS *gpsTemp)
+/*uint8_t PA6C::nextField(GPS *gpsTemp)
 {
 	gpsTemp->field[gpsTemp->index] = gpsSerial->read();
 	gpsTemp->checksum ^= gpsTemp->field[gpsTemp->index];
@@ -590,9 +797,9 @@ uint8_t PA6C::nextField(GPS *gpsTemp)
 		gpsTemp->index++;
 		return 1;
 	}
-}
+}*/
 
-uint8_t PA6C::verifyChecksum(GPS *gpsTemp)
+/*uint8_t PA6C::verifyChecksum(GPS *gpsTemp)
 {
 	gpsTemp->field[gpsTemp->index] = gpsSerial->read();
 	if((gpsTemp->field[gpsTemp->index] == '\r') || (gpsTemp->index >= 2))
@@ -620,7 +827,7 @@ uint8_t PA6C::verifyChecksum(GPS *gpsTemp)
 	}
 	gpsTemp->index++;
 	return 1;
-}
+}*/
 
 uint8_t PA6C::sleepGPS()
 {
