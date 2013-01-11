@@ -53,7 +53,7 @@ void setup()
 {
 	ggo.configureMAX17043(&max17043.batteryInterruptValue);
 	ggo.configureBMA250(&bma250.config);
-	ggo.configurePA6C(&gps.settings);
+	ggo.configurePA6C();
 	ggo.init();
 	gps.init(115200);
 	sim900.init(9600);
@@ -90,7 +90,7 @@ void setup()
 
 void loop()
 {
-	gps.getTheData(&lastValid);
+	gps.getCoordinates(&lastValid);
 	if(call)
 	{
 		if(!sim900.getGeo(&smsData))
@@ -138,7 +138,7 @@ void loop()
 	{
 		static uint8_t breach1Conf = 0;
 		static uint8_t previousSeconds1 = lastValid.seconds;
-		if((fence1 == 1) && (lastValid.speedKnots >= breachSpeed))
+		if((fence1 == 1) && (lastValid.speed >= breachSpeed))
 		{
 			ggo.configureFence(1,&fence); 
 			if(!gps.geoFenceDistance(&lastValid, &fence))
@@ -167,7 +167,7 @@ void loop()
 	{
 		static uint8_t breach2Conf = 0;
 		static uint8_t previousSeconds2 = lastValid.seconds;
-		if((fence2 == 1) && (lastValid.speedKnots >= breachSpeed))
+		if((fence2 == 1) && (lastValid.speed >= breachSpeed))
 		{  
 			ggo.configureFence(2,&fence);
 			if(!gps.geoFenceDistance(&lastValid, &fence))
@@ -196,7 +196,7 @@ void loop()
 	{
 		static uint8_t breach3Conf = 0;
 		static uint8_t previousSeconds3 = lastValid.seconds;
-		if((fence3 == 1) && (lastValid.speedKnots >= breachSpeed))
+		if((fence3 == 1) && (lastValid.speed >= breachSpeed))
 		{  
 			ggo.configureFence(3,&fence);
 			if(!gps.geoFenceDistance(&lastValid, &fence))

@@ -14,7 +14,7 @@ void command3() //speed monitoring mode
 		else
 			cmd3 = 0x02;
 	}
-	if((cmd3 == 2) && (lastValid.speedKnots > speedLimit))
+	if((cmd3 == 2) && (lastValid.speed > speedLimit))
 		cmd3 = 0x03;
 	if(cmd3 == 3)
 	{
@@ -34,14 +34,14 @@ void command3() //speed monitoring mode
 		printHTTP(&speedDataOnly, 0);
 		if(sim900.sendMessage(3,NULL,NULL))
 			return;
-		maxSpeed = lastValid.speedKnots;
+		maxSpeed = lastValid.speed;
 		cmd3 = 0x04;
 	}
 	if(cmd3 == 4)
 	{
-		if(lastValid.speedKnots > maxSpeed)
-			maxSpeed = lastValid.speedKnots;
-		if(lastValid.speedKnots <= (uint16_t)(speedLimit - speedHyst))
+		if(lastValid.speed > maxSpeed)
+			maxSpeed = lastValid.speed;
+		if(lastValid.speed <= (uint16_t)(speedLimit - speedHyst))
 			cmd3 = 0x05;
 	}
 	if(cmd3 == 5)

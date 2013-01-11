@@ -1,6 +1,7 @@
 #include "PA6C.h"
 
 
+
 /*	CONSTRUCTOR	*/
 PA6C::PA6C(HardwareSerial *ser)
 {
@@ -10,6 +11,16 @@ PA6C::PA6C(HardwareSerial *ser)
 uint8_t PA6C::init(unsigned long baudRate)
 {
 	gpsSerial->begin(baudRate);
+	timeZoneUTC = 0;
+	amPMFormat = false;
+}
+
+void PA6C::customConfig(int8_t tZ, bool aP, uint8_t KnMpKp, bool iM)
+{
+	timeZoneUTC = tZ;
+	amPMFormat = aP;
+	speedType = KnMpKp;
+	impMetric = iM;
 }
 
 /*************************************************************	
@@ -18,24 +29,20 @@ uint8_t PA6C::init(unsigned long baudRate)
 	RETURN:
 		0		All valid GPS data collected
 		1		Continuing to collect data 
-		2		Timed out while collecting data
-		3		No data yet
-		0xFF	Checksum failure, data invalid
+		2		No data in the buffer
 **************************************************************/
-uint8_t PA6C::getTheData2(gpsData *lastKnown)
+uint8_t PA6C::getCoordinates(gpsData *lastKnown)
 {
-	uint8_t returnStatus = 0x01;
 	static bool startNew = false; 
 	static char gpsField[15];
 	static uint8_t charIndex = 0;
 	static uint8_t checksum = 0;
 	static uint8_t checksumR = 0;
-	static uint8_t sentenceIndex = 0x07; //we're only collection 3 sentences
 	static uint8_t sentenceID = 0;
 	static uint8_t fieldID = 0;
 	static gpsData currentPosition;
 	if(!gpsSerial->available()) //no data in the buffer, safe to return
-		return 3;
+		return 2;
 	while(gpsSerial->available()) 
 	{
 		gpsField[charIndex] = gpsSerial->read();
@@ -74,14 +81,19 @@ uint8_t PA6C::getTheData2(gpsData *lastKnown)
 				else
 					checksum |= (gpsField[1]-55);	
 				if(checksumR != checksum)
-					sentenceIndex = 0x00; //failed checksum no data valid, start over
-				if(sentenceIndex = 0x07)
-					*lastKnown = currentPosition;
+					sentenceID = 0x00;
 				startNew = false;	
 				checksumR = 0;
 				checksum = 0;
 				charIndex = 0;
 				fieldID = 0;
+				if(sentenceID == 0x07)
+				{
+					directionOfTravel(&currentPosition);
+					*lastKnown = currentPosition;
+					sentenceID = 0x00;
+					return 0;
+				}
 				break;
 			default:
 				checksum ^= gpsField[charIndex];
@@ -89,27 +101,28 @@ uint8_t PA6C::getTheData2(gpsData *lastKnown)
 				break;
 		}
 	}
+	return 1; //all data in the buffer processed, but new data is not available
 }
 
 void PA6C::filterData(char *fieldData, gpsData *current, uint8_t *sID, uint8_t *fID)
 {
 	if(!(*fID))
 	{
-		if(strstr(fieldData,"GGA")!=NULL)
+		if(strstr(fieldData,GPGGA)!=NULL)
 		{		
 			*sID = 4;
-			*fID++;
+			(*fID)++;
 			return;
 		}
-		if(strstr(fieldData,"GSA")!=NULL)
+		if(strstr(fieldData,GPGSA)!=NULL)
 		{		
 			*sID |= 2;
-			*fID++;
+			(*fID)++;
 			return;
 		}
-		if(strstr(fieldData,"GSV")!=NULL)
+		if(strstr(fieldData,GPGSV)!=NULL)
 			return;
-		if(strstr(fieldData,"RMC")!=NULL)
+		if(strstr(fieldData,GPRMC)!=NULL)
 		{		
 			*sID |= 1;
 			if(*sID != 0x07)
@@ -117,12 +130,11 @@ void PA6C::filterData(char *fieldData, gpsData *current, uint8_t *sID, uint8_t *
 				*sID = 0;
 				*fID = 0;
 			}
-			*fID++;
+			(*fID)++;
 			return;
 		}
-		if(strstr(fieldData,"VTG")!=NULL)
+		if(strstr(fieldData,GPVTG)!=NULL)
 			return;
-		*sID = 0;
 		*fID = 0;
 	}
 	if(!(*sID))
@@ -139,16 +151,17 @@ void PA6C::filterData(char *fieldData, gpsData *current, uint8_t *sID, uint8_t *
 				break;
 			case 9:
 				current->altitude = atof(fieldData);
+				if(!impMetric)
+					current->altitude *= METERSTOFEET;
 				break;
 			case 14:
-				*sID = 2;
 				*fID = 0;
 				return;
 				break;
 		}
-		*fID++;
+		(*fID)++;
 	}
-	if(*sID == 2)
+	if(*sID == 6)
 	{
 		switch(*fID)
 		{
@@ -166,21 +179,30 @@ void PA6C::filterData(char *fieldData, gpsData *current, uint8_t *sID, uint8_t *
 				break;
 			case 17:
 				current->vdop = (uint16_t)(atof(fieldData)*100);
-				*sID = 1;
 				*fID = 0;
 				return;
 				break;
 		}
-		*fID++;
+		(*fID)++;
 	}	
-	if(*sID == 1)
+	if(*sID == 7)
 	{
 		switch(*fID)
 		{
 			case 1:
 				current->seconds = atol(fieldData)%100;
 				current->minute = (atol(fieldData)%10000)/100;
-				current->hour = (atol(fieldData)/10000);
+				current->hour = (atol(fieldData)/10000) + timeZoneUTC;
+				if(current->hour > 23)
+					current->hour -= 24;
+				else if(current->hour < 0)
+					current->hour += 24;
+				if(current->hour < 12)
+					current->amPM = 'a';
+				else
+					current->amPM = 'p';
+				if(amPMFormat && (current->amPM == 'p'))
+					current->hour -= 12;
 				break;
 			case 2:
 				current->rmcStatus = fieldData[0];
@@ -211,8 +233,14 @@ void PA6C::filterData(char *fieldData, gpsData *current, uint8_t *sID, uint8_t *
 			case 6:	
 				if(fieldData[0] == 'W'){current->longitude = -current->longitude;}
 				break;
-			case 7:	
-				current->speedKnots = (uint16_t)(atof(fieldData) * 100);
+			case 7:
+				{
+					float spK = atof(fieldData);
+					if(speedType == 1)
+						current->speed = (uint16_t)(spK * KNOTSTOMPH);
+					if(speedType == 2)
+						current->speed = (uint16_t)(spK * KNOTSTOKPH);
+				}
 				break;
 			case 8:	
 				current->course = (uint16_t)(atof(fieldData)*100);
@@ -225,13 +253,11 @@ void PA6C::filterData(char *fieldData, gpsData *current, uint8_t *sID, uint8_t *
 				}
 				break;
 			case 12:
-				*sID = 7;
 				*fID = 0;
 				return;
 				break;
-				
 		}
-		*fID++;
+		(*fID)++;
 	}	
 }
 
@@ -281,3 +307,35 @@ void PA6C::directionOfTravel(gpsData *current)
   if (current->course > 29300 && current->course <= 33800)
     strcpy(current->courseDirection,"NW");
 }  
+
+uint8_t PA6C::geoFenceDistance(gpsData *last, geoFence *fence) // was originally longs and called fLat and fLon
+{
+	float ToRad = PI / 180.0;
+	float R = 6378.1; // radius earth in Km
+	float dLat = ((((fence->latitude%1000000)/600000.0) + (fence->latitude/1000000)) -
+					(((last->latitude%1000000)/600000.0) + (last->latitude/1000000))) * ToRad;
+	float dLon = ((((fence->longitude%1000000)/600000.0) + (fence->longitude/1000000)) -
+					(((last->longitude%1000000)/600000.0) + (last->longitude/1000000))) * ToRad;
+	float a = sin(dLat/2) * sin(dLat/2) +
+					cos((((last->latitude%1000000)/600000.0) + (last->latitude/1000000)) * ToRad) *
+					cos((((fence->latitude%1000000)/600000.0) + (fence->latitude/1000000)) * ToRad) *
+					sin(dLon/2) * sin(dLon/2);
+	float c = 2 * atan2(sqrt(a), sqrt(1 - a));
+	unsigned long d = (unsigned long)(R * c * 1000UL);
+	if(!impMetric)
+		d *= METERSTOFEET;
+	if(!fence->inOut) //inside fence
+	{
+		if( d > fence->radius )
+			return 0;
+		else
+			return 1;
+	}
+	if(fence->inOut) //outside fence
+	{
+		if( d < fence->radius )
+			return 0;
+		else
+			return 1;
+	}
+}

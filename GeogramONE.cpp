@@ -93,11 +93,19 @@ void GeogramONE::configureBMA250(registersBMA250 *config)
 	EEPROM_readAnything(BMA0X28,config->twoEight);
 }
 
-void GeogramONE::configurePA6C(configVar *settings)
-{
-	EEPROM_readAnything(ENGMETRIC,settings->engMetric);
-	EEPROM_readAnything(TIMEFORMAT,settings->timeFormat);
-	EEPROM_readAnything(TIMEZONE,settings->timeZone);
+void GeogramONE::configurePA6C()
+{/*
+	bool impMetric;
+	int8_t timeZone;
+	uint8_t timeFormat;
+	EEPROM_readAnything(ENGMETRIC,impMetric);
+	EEPROM_readAnything(TIMEFORMAT,timeZone);
+	EEPROM_readAnything(TIMEFORMAT,timeFormat);
+	PA6C::customConfig(timeZone,(bool)(timeFormat >> 1),(++impMetric),impMetric);
+	*/
+//	EEPROM_readAnything(ENGMETRIC,settings->engMetric);
+//	EEPROM_readAnything(TIMEFORMAT,settings->timeFormat);
+//	EEPROM_readAnything(TIMEZONE,settings->timeZone);
 }
 
 void GeogramONE::configureFence(uint8_t fenceNumber, geoFence *fence)

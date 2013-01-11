@@ -99,7 +99,7 @@ class GeogramONE
 		void configureIO( uint8_t, uint8_t );
 		void configureMAX17043(uint8_t *);
 		void configureBMA250(registersBMA250 *);
-		void configurePA6C(configVar *);
+		void configurePA6C();
 		void configureFence(uint8_t , geoFence *);
 		void configureBreachParameters(uint8_t *, uint8_t *);
 		void getFenceActive(uint8_t fenceNumber, uint8_t *fenceVar);
