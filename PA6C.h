@@ -18,6 +18,8 @@
 #define GPRMC				"MC"
 #define GPVTG				"TG"
 
+#define PMTK161				"$PMTK161,0*28"
+#define PMTK000				"$PMTK000*32"
 				
 struct gpsData
 {

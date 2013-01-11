@@ -6,12 +6,12 @@ void command1() //motion sensing mode
 		case 0x01 :  
 			gps.sleepGPS();
 			sim900.powerDownGSM();
-			bma250.enableInterrupts();
+			BMA250enableInterrupts();
 			ggo.goToSleep();
 			gps.wakeUpGPS();
 			sim900.init(9600);
 			if(!(sleepTimeConfig & 0x02))
-				bma250.disableInterrupts();
+				BMA250disableInterrupts();
 			cmd1 = 0x02;
 			break;
 		case 0x02 :

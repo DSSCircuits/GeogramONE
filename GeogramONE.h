@@ -2,8 +2,8 @@
 #include <EEPROM.h>
 #include "SIM900.h"
 #include "PA6C.h"
-#include "MAX17043.h"
-#include "BMA250.h"
+//#include "MAX17043.h"
+//#include "BMA250.h"
 
 #ifndef GeogramONE_h
 #define GeogramONE_h
@@ -88,6 +88,10 @@
 /**********************************/
 
 #define PG_INT             		14
+#define BMA_ADD    (uint8_t)0x18
+#define FUELGAUGE          		0x36 //Fuel gauge I2C address
+#define FUELGAUGEALERT     		0x11 //set to 15% battery capacity
+#define FUELGAUGEPIN       		0x07 //Fuel gauge interrupt pin
 
 
 class GeogramONE 
@@ -97,9 +101,9 @@ class GeogramONE
 		void init( );
 		void goToSleep();
 		void configureIO( uint8_t, uint8_t );
-		void configureMAX17043(uint8_t *);
-		void configureBMA250(registersBMA250 *);
-		void configurePA6C();
+//		void configureMAX17043(uint8_t *);
+//		void configureBMA250(registersBMA250 *);
+//		void configurePA6C();
 		void configureFence(uint8_t , geoFence *);
 		void configureBreachParameters(uint8_t *, uint8_t *);
 		void getFenceActive(uint8_t fenceNumber, uint8_t *fenceVar);

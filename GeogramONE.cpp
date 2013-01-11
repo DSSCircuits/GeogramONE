@@ -69,44 +69,12 @@ void GeogramONE::configureIO(uint8_t pinNumber, uint8_t eepromAddress)
 	if(ioConfig == 3){pinMode(pinNumber,OUTPUT);digitalWrite(pinNumber,HIGH);}
 	if(ioConfig == 4){analogReference(DEFAULT);analogRead(pinNumber - 14);}
 }
-
+/*
 void GeogramONE::configureMAX17043(uint8_t *battery)
 {  
 	EEPROM_readAnything(BATTERYLOWLEVEL,*battery);
-}
+}*/
 
-void GeogramONE::configureBMA250(registersBMA250 *config)
-{
-	EEPROM_readAnything(BMA0X0F,config->zeroF);
-	EEPROM_readAnything(BMA0X10,config->oneZero);
-	EEPROM_readAnything(BMA0X11,config->oneOne);
-	EEPROM_readAnything(BMA0X16,config->oneSix);
-	EEPROM_readAnything(BMA0X17,config->oneSeven);
-	EEPROM_readAnything(BMA0X19,config->oneNine);
-	EEPROM_readAnything(BMA0X1A,config->oneA);	
-	EEPROM_readAnything(BMA0X1B,config->oneB);
-	EEPROM_readAnything(BMA0X20,config->twoZero);
-	EEPROM_readAnything(BMA0X21,config->twoOne);
-	EEPROM_readAnything(BMA0X25,config->twoFive);
-	EEPROM_readAnything(BMA0X26,config->twoSix);
-	EEPROM_readAnything(BMA0X27,config->twoSeven);
-	EEPROM_readAnything(BMA0X28,config->twoEight);
-}
-
-void GeogramONE::configurePA6C()
-{/*
-	bool impMetric;
-	int8_t timeZone;
-	uint8_t timeFormat;
-	EEPROM_readAnything(ENGMETRIC,impMetric);
-	EEPROM_readAnything(TIMEFORMAT,timeZone);
-	EEPROM_readAnything(TIMEFORMAT,timeFormat);
-	PA6C::customConfig(timeZone,(bool)(timeFormat >> 1),(++impMetric),impMetric);
-	*/
-//	EEPROM_readAnything(ENGMETRIC,settings->engMetric);
-//	EEPROM_readAnything(TIMEFORMAT,settings->timeFormat);
-//	EEPROM_readAnything(TIMEZONE,settings->timeZone);
-}
 
 void GeogramONE::configureFence(uint8_t fenceNumber, geoFence *fence)
 {

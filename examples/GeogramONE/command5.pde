@@ -51,7 +51,7 @@ void sleepTimer()
 	if(!(sleepTimeConfig & 0x04))
 		sim900.init(9600);
 	if(!(sleepTimeConfig & 0x02))
-		bma250.disableInterrupts();
+		BMA250disableInterrupts();
 	onOffTimer = millis();
 }
 		

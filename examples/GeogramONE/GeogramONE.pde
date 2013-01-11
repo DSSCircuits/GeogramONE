@@ -13,9 +13,9 @@ under CC-SA v3 license.
 
 GeogramONE ggo;
 AltSoftSerial GSM;
-MAX17043 max17043(&I2c);
+//MAX17043 max17043(&I2c);
 SIM900 sim900(&GSM);
-BMA250 bma250(&I2c);
+//BMA250 bma250(&I2c);
 geoSmsData smsData;
 PA6C gps(&Serial); 
 gpsData lastValid;
@@ -51,14 +51,15 @@ uint16_t speedLimit = 0;
 
 void setup()
 {
-	ggo.configureMAX17043(&max17043.batteryInterruptValue);
-	ggo.configureBMA250(&bma250.config);
-	ggo.configurePA6C();
+	//ggo.configureMAX17043(&max17043.batteryInterruptValue);
+	//ggo.configureBMA250(&bma250.config);
+	//ggo.configurePA6C();
 	ggo.init();
 	gps.init(115200);
 	sim900.init(9600);
-	max17043.init(7, 500);
-	bma250.init(3, 500);
+	MAX17043init(7, 500);
+	BMA250init(3, 500);
+	gps.customConfig(-4,true,1,false);
 	attachInterrupt(0, ringIndicator, FALLING);
 	attachInterrupt(1, movement, FALLING);
 	PCintPort::attachInterrupt(PG_INT, &charger, CHANGE);
@@ -67,7 +68,7 @@ void setup()
 	call = sim900.checkForMessages();
 	if(call == 0xFF)
 		call = 0;
-	battery = max17043.getAlertFlag();
+	battery = MAX17043getAlertFlag();
 	ggo.getFenceActive(1, &fence1); 
 	ggo.getFenceActive(2, &fence2); 
 	ggo.getFenceActive(3, &fence3);
@@ -75,7 +76,7 @@ void setup()
 	ggo.configureBreachParameters(&breachSpeed, &breachReps);
 	ggo.configureInterval(&timeInterval, &sleepTimeOn, &sleepTimeOff, &sleepTimeConfig);
 	if(sleepTimeConfig & 0x02)
-		bma250.enableInterrupts();
+		BMA250enableInterrupts();
 	uint8_t swInt = EEPROM.read(IOSTATE0);
 	if(swInt == 0x05)
 		PCintPort::attachInterrupt(4, &d4Interrupt, RISING);
@@ -129,7 +130,7 @@ void loop()
 		if(!sim900.sendMessage(2,smsData.smsNumber,NULL,BATTERYMSG))
 		{
 			battery = 0;
-			max17043.clearAlertFlag();
+			MAX17043clearAlertFlag();
 		}
 	}
 	if(charge & 0x02)

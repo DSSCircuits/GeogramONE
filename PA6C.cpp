@@ -1,7 +1,5 @@
 #include "PA6C.h"
 
-
-
 /*	CONSTRUCTOR	*/
 PA6C::PA6C(HardwareSerial *ser)
 {
@@ -22,6 +20,7 @@ void PA6C::customConfig(int8_t tZ, bool aP, uint8_t KnMpKp, bool iM)
 	speedType = KnMpKp;
 	impMetric = iM;
 }
+
 
 /*************************************************************	
 	Procedure to collect all data from used NMEA sentences. All
@@ -263,7 +262,7 @@ void PA6C::filterData(char *fieldData, gpsData *current, uint8_t *sID, uint8_t *
 
 uint8_t PA6C::sleepGPS()
 {
-	gpsSerial->println("$PMTK161,0*28");
+	gpsSerial->println(PMTK161);
 	delay(300);
 	gpsSerial->flush();
 	unsigned long timeOut = millis();
@@ -277,7 +276,7 @@ uint8_t PA6C::sleepGPS()
 
 uint8_t PA6C::wakeUpGPS()
 {
-	gpsSerial->println("$PMTK000*32");
+	gpsSerial->println(PMTK000);
 	unsigned long timeOut = millis();
 	while((millis() - timeOut) <= GPSTIMEOUT) // was 3000 before
 	{
