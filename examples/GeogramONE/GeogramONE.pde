@@ -13,9 +13,7 @@ under CC-SA v3 license.
 
 GeogramONE ggo;
 AltSoftSerial GSM;
-//MAX17043 max17043(&I2c);
 SIM900 sim900(&GSM);
-//BMA250 bma250(&I2c);
 geoSmsData smsData;
 PA6C gps(&Serial); 
 gpsData lastValid;
@@ -51,9 +49,6 @@ uint16_t speedLimit = 0;
 
 void setup()
 {
-	//ggo.configureMAX17043(&max17043.batteryInterruptValue);
-	//ggo.configureBMA250(&bma250.config);
-	//ggo.configurePA6C();
 	ggo.init();
 	gps.init(115200);
 	sim900.init(9600);

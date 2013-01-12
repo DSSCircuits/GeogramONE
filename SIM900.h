@@ -1,5 +1,5 @@
 #include <AltSoftSerial.h>
-#include <avr/pgmspace.h>
+//#include <avr/pgmspace.h>
 #include <EEPROM.h>
 
 #ifndef SIM900_h
@@ -16,6 +16,24 @@
 #define GSMSWITCH       6
 #define PINCODE         0
 #define SIMSIZE			20
+
+#define IPR				"IPR=9600"  	//basic
+#define CMGR			"CMGR=" 		//ext
+#define CMGD			"CMGD="		//basic
+#define CPMS			"CPMS?"		//ext
+#define CMGF			"CMGF=1"	//basic
+#define CNMI			"CNMI=0,0,0,0,0"	//basic
+#define CREG			"CREG?"		//ext
+#define CSCLK			"CSCLK="		//basic
+#define CPOWD			"CPOWD=1"	//
+#define CMGDA			"CMGDA=\"DEL ALL\""	//basic
+#define CMEE			"CMEE=1" 	//basic
+#define CSQ				"CSQ" 		//ext
+
+#define	OK				"OK"
+#define	ERROR			"ERROR"
+#define CALLREADY		"Call Ready\r\n"
+
 
 #define AT_TO			200L    	//1000
 #define CMGR_TO			15000L	//15000
@@ -68,32 +86,28 @@ class SIM900
 		SIM900(AltSoftSerial *ser);
 		uint8_t init(unsigned long);
 		uint8_t checkForMessages();
-		uint8_t deleteMessage(uint8_t);
+		bool deleteMessage(uint8_t);
 		uint8_t readMessageBreakOut(simSmsData *, uint8_t);
 		uint8_t sendMessage(uint8_t, char *, const char *, uint16_t eepromMsgAddress = 1024);
 		uint8_t goesWhere(char *);
 		uint8_t confirmPassword(char *, char *);
-		uint8_t deleteAllMessages();
+		bool deleteAllMessages();
 		uint8_t getCommand(char *);
-		uint8_t gsmSleepMode0();
-		uint8_t gsmSleepMode2();
+		bool gsmSleepMode0();
+		bool gsmSleepMode2();
 		uint8_t signalQuality(bool wakeUpComm = false);
 		uint8_t powerDownGSM();
 		uint8_t getGeo(geoSmsData *);
 		void printLatLon(long *, long *);
 	private:
-		void printPROGMEM(int, int atArg = 0xFF);
-		uint8_t atNoData(uint8_t, uint8_t, unsigned long, int atArg = 0xFF);
-		uint8_t okError(char *);
+		bool atNoData(const char *, unsigned long, int argument = 0xFF);
 		uint8_t totalMsg;
 		uint8_t currentMsg;
 		uint8_t powerOnGSM();
 		void initializeGSM();
-		uint8_t checkNetworkRegistration();
-		uint8_t sendATCommand(prog_char*, char*, unsigned int, int, boolean);
-		uint8_t sendATCommandBasic(prog_char*, char*, uint8_t, unsigned long, int, boolean);
-		uint8_t callReady();
-		uint8_t cpin();
+		bool checkNetworkRegistration();
+		bool sendATCommandBasic(const char *, char*, uint8_t, unsigned long, int, boolean);
+		bool callReady();
 		AltSoftSerial *GSM;
 };
 
