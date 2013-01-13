@@ -22,12 +22,6 @@ template <class T> int EEPROM_readAnything(int ee, T& value)
 
 const char* DELIMITER = ".";
 
-int SIM900::freeRam () {
-  extern int __heap_start, *__brkval; 
-  int v; 
-  return (int) &v - (__brkval == 0 ? (int) &__heap_start : (int) __brkval); 
-}
-
 
 SIM900::SIM900(AltSoftSerial *ser)
 {
@@ -56,6 +50,7 @@ bool SIM900::gsmSleepMode0()
 bool SIM900::gsmSleepMode2()
 {
 	GSM->println("AT\r\nAT");
+	delay(50);
 	return(atNoData(CSCLK,CSCLK_TO,2));
 }
 
@@ -66,6 +61,7 @@ bool SIM900::gsmSleepMode2()
 	RETURN:
 		0		GSM turned on successfully or was already on
 		1		GSM module did not turn on
+		2		GSM was already on
 **************************************************************/
 uint8_t SIM900::powerOnGSM(){
 	if(digitalRead(GSMSTATUS))
@@ -117,7 +113,6 @@ bool SIM900::atNoData(const char *atCommand, unsigned long atTimeOut, int argume
 	uint8_t index = 0;
 	char rxBuffer[22];
 	GSM->flush();
-//	GSM->print("AT+");
 	GSM->print(atCommand);
 	if(argument == 0xFF)
 		GSM->println();
@@ -154,7 +149,6 @@ bool SIM900::checkNetworkRegistration()
 
 uint8_t SIM900::checkForMessages()
 {
-	Serial.println(freeRam());
 	char rxBuffer[75]; //was 100
 	GSM->println(CPMS);
 	if(sendATCommandBasic(rxBuffer,75,CPMS_TO))//check for new messages
@@ -163,9 +157,6 @@ uint8_t SIM900::checkForMessages()
 	char *str = NULL;
 	ptr = strtok_r(ptr,",",&str);
 	ptr = strtok_r(NULL,",",&str);
-	Serial.print("#");
-	Serial.print(atoi(ptr));
-	Serial.println("#");
 	return (atoi(ptr));  //Number of messages on the sim card
 }
 
@@ -188,7 +179,7 @@ uint8_t SIM900::readMessageBreakOut(simSmsData *sms, int msg)
 	GSM->print(CMGR);
 	GSM->println(msg);
 	if(sendATCommandBasic(rxBuffer,100,CMGR_TO)){return 1;}
-	if(strlen(rxBuffer) <= 15){return 0xFF;} //if string length is under 15, SIM position was blank
+	if(strlen(rxBuffer) <= 25){return 0xFF;} //if string length is under 25, SIM position was blank
 	if(strstr(rxBuffer,"@")!=NULL)
 		replyMessageType = 2; //received message type is an email
 	else
@@ -369,13 +360,9 @@ uint8_t SIM900::sendMessage(uint8_t smsFormat, char *smsAddress, const char *sms
 			idx++;
 			rxBuffer[idx] = '\0';
 			if(strstr(rxBuffer,ERROR)!= NULL)
-			{
 				return 2;  // There was an error sending the SMS/email
-			}
 			if(strstr(rxBuffer,OK)!= NULL)
-			{
 				return 0;  // SMS/email successfully sent
-			}
 			if((rxBuffer[idx-1] == '\n') || (idx == 19) )
 				idx = 0;
 		}
@@ -387,9 +374,7 @@ uint8_t SIM900::sendMessage(uint8_t smsFormat, char *smsAddress, const char *sms
 uint8_t SIM900::confirmPassword(char *smsPwd, char *pwd)
 {
 	if(strncmp(smsPwd,pwd,4) == 0) //debug serial print
-	{
 		return 0; //valid security code
-	}
 	return 1;
 }
 
@@ -402,9 +387,7 @@ uint8_t SIM900::getGeo(geoSmsData *retSms)
 		return 3;
 	retSms->smsPending = checkForMessages();
 	if(!retSms->smsPending)
-	{
 		return 0;
-	} //no messages
 	if(retSms->smsPending == 0xFF)
 	{
 		retSms->smsPending = 0x00;
@@ -426,13 +409,9 @@ uint8_t SIM900::getGeo(geoSmsData *retSms)
 		char pwd[5];
 		EEPROM_readAnything(PINCODE,pwd);
 		if(!confirmPassword(sms.smsPwd,pwd))
-		{
 			retSms->smsDataValid = true;
-		}
 		else
-		{
 			retSms->smsDataValid = false;
-		}
 		return 0;  //message read
 	}
 	deleteAllMessages(); // too many messages on SIM card
@@ -467,8 +446,7 @@ bool SIM900::sendATCommandBasic(char *buffer, uint8_t arraySize, unsigned long a
 	receive calls
 	RETURN:
 		0		GSM is ready
-		1		Error, buffer is full
-		1		GSM timed out, not ready
+		1		GSM not ready
 **************************************************************/
 bool SIM900::callReady()
 {
@@ -497,23 +475,20 @@ bool SIM900::callReady()
 	RETURN:
 		0			Error sending AT command/No signal
 		1 - 99		RSSI signal strength
-		
-		
 **************************************************************/
 uint8_t SIM900::signalQuality(bool wakeUpComm)
 {
 	if(wakeUpComm)
 		gsmSleepMode2();
 	char rxBuffer[50];
-	uint8_t rssi = 0;
 	GSM->println(CSQ);
-	if(sendATCommandBasic(rxBuffer,50,CSQ_TO)){return 0;}
+	if(sendATCommandBasic(rxBuffer,50,CSQ_TO))
+		return 0;
 	char *ptr = rxBuffer;
 	char *str = NULL;
 	ptr = strtok_r(ptr," ",&str);
 	ptr = strtok_r(NULL,",",&str);
-	rssi = atoi(ptr);  
-	return rssi;
+	return(atoi(ptr));
 }
 
 void SIM900::printLatLon(long *lat, long *lon)
