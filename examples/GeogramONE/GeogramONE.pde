@@ -47,6 +47,7 @@ uint8_t speedHyst = 0;
 uint16_t speedLimit = 0;
 
 
+
 void setup()
 {
 	ggo.init();
@@ -86,6 +87,7 @@ void setup()
 
 void loop()
 {
+
 	gps.getCoordinates(&lastValid);
 	if(call)
 	{
@@ -232,3 +234,4 @@ void loop()
 			d10Switch = 0x00;
 	}
 } 
+

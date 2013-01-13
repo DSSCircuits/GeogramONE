@@ -17,18 +17,18 @@
 #define PINCODE         0
 #define SIMSIZE			20
 
-#define IPR				"IPR=9600"  	//basic
-#define CMGR			"CMGR=" 		//ext
-#define CMGD			"CMGD="		//basic
-#define CPMS			"CPMS?"		//ext
-#define CMGF			"CMGF=1"	//basic
-#define CNMI			"CNMI=0,0,0,0,0"	//basic
-#define CREG			"CREG?"		//ext
-#define CSCLK			"CSCLK="		//basic
-#define CPOWD			"CPOWD=1"	//
-#define CMGDA			"CMGDA=\"DEL ALL\""	//basic
-#define CMEE			"CMEE=1" 	//basic
-#define CSQ				"CSQ" 		//ext
+#define IPR				"AT+IPR=9600"  	//basic
+#define CMGR			"AT+CMGR=" 		//ext
+#define CMGD			"AT+CMGD="		//basic
+#define CPMS			"AT+CPMS?"		//ext
+#define CMGF			"AT+CMGF=1"	//basic
+#define CNMI			"AT+CNMI=0,0,0,0,0"	//basic
+#define CREG			"AT+CREG?"		//ext
+#define CSCLK			"AT+CSCLK="		//basic
+#define CPOWD			"AT+CPOWD=1"	//
+#define CMGDA			"AT+CMGDA=\"DEL ALL\""	//basic
+#define CMEE			"AT+CMEE=1" 	//basic
+#define CSQ				"AT+CSQ" 		//ext
 
 #define	OK				"OK"
 #define	ERROR			"ERROR"
@@ -84,10 +84,11 @@ class SIM900
 {
 	public:
 		SIM900(AltSoftSerial *ser);
+		int freeRam();
 		uint8_t init(unsigned long);
 		uint8_t checkForMessages();
-		bool deleteMessage(uint8_t);
-		uint8_t readMessageBreakOut(simSmsData *, uint8_t);
+		bool deleteMessage(int);
+		uint8_t readMessageBreakOut(simSmsData *, int);
 		uint8_t sendMessage(uint8_t, char *, const char *, uint16_t eepromMsgAddress = 1024);
 		uint8_t goesWhere(char *);
 		uint8_t confirmPassword(char *, char *);
@@ -106,7 +107,7 @@ class SIM900
 		uint8_t powerOnGSM();
 		void initializeGSM();
 		bool checkNetworkRegistration();
-		bool sendATCommandBasic(const char *, char*, uint8_t, unsigned long, int, boolean);
+		bool sendATCommandBasic(char*, uint8_t, unsigned long);
 		bool callReady();
 		AltSoftSerial *GSM;
 };
