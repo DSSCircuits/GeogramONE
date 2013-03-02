@@ -80,15 +80,23 @@ struct geoSmsData
 	uint8_t smsPending;
 };
 
+struct textMessage
+{
+	char smsAddress[39];
+	bool smsType;
+	char message[50];
+};
+
+
 class SIM900 
 {
 	public:
 		SIM900(AltSoftSerial *ser);
-		int freeRam();
 		uint8_t init(unsigned long);
 		uint8_t checkForMessages();
 		bool deleteMessage(int);
 		uint8_t readMessageBreakOut(simSmsData *, int);
+		uint8_t readTextMessage(textMessage *);
 		uint8_t sendMessage(uint8_t, char *, const char *, uint16_t eepromMsgAddress = 1024);
 		uint8_t goesWhere(char *);
 		uint8_t confirmPassword(char *, char *);

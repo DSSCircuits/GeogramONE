@@ -170,6 +170,8 @@ bool SIM900::deleteAllMessages()
 	return(atNoData(CMGDA,CMGDA_TO));
 }
 
+
+
 uint8_t SIM900::readMessageBreakOut(simSmsData *sms, int msg)
 {
 	char rxBuffer[100];

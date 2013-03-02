@@ -46,13 +46,18 @@ uint8_t sleepTimeConfig = 0;
 uint8_t speedHyst = 0;
 uint16_t speedLimit = 0;
 
-
+unsigned long miniTimer = 0;
 
 void setup()
 {
+
+
+
 	ggo.init();
 	gps.init(115200);
 	sim900.init(9600);
+
+	
 	MAX17043init(7, 500);
 	BMA250init(3, 500);
 	gps.customConfig(-4,true,1,false);
@@ -83,6 +88,8 @@ void setup()
 		PCintPort::attachInterrupt(10, &d10Interrupt, RISING);
 	if(swInt == 0x06)
 		PCintPort::attachInterrupt(10, &d10Interrupt, FALLING);
+		
+
 }
 
 void loop()
@@ -113,6 +120,8 @@ void loop()
 					command6();
 				else if(smsData.smsCmdNum == 7)
 					command7();
+				else if(smsData.smsCmdNum == 9)
+					udpSetup();
 			}
 		}
 	}
@@ -233,5 +242,13 @@ void loop()
 		if(!sim900.sendMessage(2,smsData.smsNumber,NULL,D10MSG))
 			d10Switch = 0x00;
 	}
+	
+	
+/*	 if(((millis() - miniTimer) >= 5000 )) {
+          sendCoordinates();
+          miniTimer = millis();
+        }*/
+	
+	
 } 
 
