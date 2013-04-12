@@ -121,7 +121,8 @@ void loop()
 				else if(smsData.smsCmdNum == 7)
 					command7();
 				else if(smsData.smsCmdNum == 9)
-					udpSetup();
+					//udpSetup();
+					UDP();
 			}
 		}
 	}

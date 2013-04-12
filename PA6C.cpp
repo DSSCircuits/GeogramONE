@@ -150,6 +150,7 @@ void PA6C::filterData(char *fieldData, gpsData *current, uint8_t *sID, uint8_t *
 				break;
 			case 9:
 				current->altitude = atof(fieldData);
+				current->orangeAltitude = atol(fieldData);  //orange
 				if(!impMetric)
 					current->altitude *= METERSTOFEET;
 				break;
@@ -189,6 +190,7 @@ void PA6C::filterData(char *fieldData, gpsData *current, uint8_t *sID, uint8_t *
 		switch(*fID)
 		{
 			case 1:
+				current->orangeTime = atol(fieldData); //orange
 				current->seconds = atol(fieldData)%100;
 				current->minute = (atol(fieldData)%10000)/100;
 				current->hour = (atol(fieldData)/10000) + timeZoneUTC;
@@ -208,6 +210,7 @@ void PA6C::filterData(char *fieldData, gpsData *current, uint8_t *sID, uint8_t *
 				break;
 			case 3:	
 				{
+					current->orangeLat = atof(fieldData); //orange
 					char *str = NULL;
 					char *ptr = NULL;
 					ptr = strtok_r(fieldData,".",&str);
@@ -216,11 +219,13 @@ void PA6C::filterData(char *fieldData, gpsData *current, uint8_t *sID, uint8_t *
 					current->latitude += atol(ptr);
 				}
 				break;
-			case 4:	
+			case 4:
+				current->orangeNS = fieldData[0]; //orange
 				if(fieldData[0] == 'S'){current->latitude = -current->latitude;}
 				break;
 			case 5:
 				{
+					current->orangeLon = atof(fieldData); //orange
 					char *str = NULL;
 					char *ptr = NULL;
 					ptr = strtok_r(fieldData,".",&str);
@@ -230,10 +235,12 @@ void PA6C::filterData(char *fieldData, gpsData *current, uint8_t *sID, uint8_t *
 				}
 				break;
 			case 6:	
+				current->orangeEW = fieldData[0]; //orange
 				if(fieldData[0] == 'W'){current->longitude = -current->longitude;}
 				break;
 			case 7:
 				{
+					current->orangeSpeed = atol(fieldData); //orange
 					float spK = atof(fieldData);
 					if(speedType == 1)
 						current->speed = (uint16_t)(spK * KNOTSTOMPH);
@@ -241,11 +248,13 @@ void PA6C::filterData(char *fieldData, gpsData *current, uint8_t *sID, uint8_t *
 						current->speed = (uint16_t)(spK * KNOTSTOKPH);
 				}
 				break;
-			case 8:	
+			case 8:
+				current->orangeCourse = atoi(fieldData); //orange
 				current->course = (uint16_t)(atof(fieldData)*100);
 				break;
 			case 9:	
 				{
+					current->orangeDate = atol(fieldData); //orange
 					current->year = atol(fieldData)%100;
 					current->month = (atol(fieldData)%10000)/100;
 					current->day = atol(fieldData)/10000;

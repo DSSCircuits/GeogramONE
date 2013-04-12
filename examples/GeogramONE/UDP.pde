@@ -1,3 +1,52 @@
+void UDP()
+{
+	sim900.gsmSleepMode0();
+	sendGPRScmd ("AT+CIPMUX=0","OK",3000,true,0);
+	//sendGPRScmd ("AT+CSTT=\"wholesale\"","OK",3000,true,0);
+	//sendGPRScmd ("AT+CSTT=\"telnamobile.com\"","OK",3000,true,0);
+	sendGPRScmd("AT+CSTT=\"epc.tmobile.com\"","OK",10000,true,0);
+	sendGPRScmd ("AT+CIICR","OK",10000,true,0);
+	sendGPRScmd ("AT+CIFSR","OK",5000,true,0);
+	sendGPRScmd ("AT+CIPSTART=\"UDP\",\"193.193.165.166\",\"20332\"","OK",2000,true,0);
+	sendGPRScmd ("AT+CIPSEND",">",3000,true,0);
+	GSM.print("012896006334665#SD#");
+
+	GSM.print("070413;");
+	GSM.print("011100;");
+	GSM.print("4428.7641;N;");
+	GSM.print("07023.2717;W;"); // zero in front
+	GSM.print("NA;");
+	GSM.print("NA;");
+	GSM.print("NA;");
+	GSM.println("NA");
+	
+/*	GSM.print(lastValid.orangeDate);
+	GSM.print(";");
+	GSM.print(lastValid.orangeTime);
+	GSM.print(";");
+	GSM.print(lastValid.orangeLat,4);
+	GSM.print(";");
+	GSM.print(lastValid.orangeNS);
+	GSM.print(";");
+	GSM.print(lastValid.orangeLon,4);
+	GSM.print(";");
+	GSM.print(lastValid.orangeEW);
+	GSM.print(";");
+	GSM.print(lastValid.orangeSpeed);
+	GSM.print(";");
+	GSM.print(lastValid.orangeCourse);
+	GSM.print(";");
+	GSM.print(lastValid.orangeAltitude);
+	GSM.print(";");
+	GSM.println("NA");*/
+	
+	
+	GSM.print(0x1A,BYTE);
+    delay(10000);
+    sendGPRScmd ("AT+CIPCLOSE","OK",2000,true,0);
+	sendGPRScmd ("AT+CIPSHUT","OK",2000,true,0);
+}
+
 void udpSetup()
 {
         

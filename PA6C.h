@@ -49,6 +49,17 @@ struct gpsData
 	uint8_t day;
 	char amPM;
 	char courseDirection[3];
+	/*GPS Trace Orange*/
+	float orangeLat;
+	float orangeLon;
+	long orangeAltitude;
+	long orangeDate;
+	long orangeTime;
+	int orangeCourse;
+	long orangeSpeed;
+	char orangeNS;
+	char orangeEW;
+	
 /*****************************/
 	
 };
