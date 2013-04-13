@@ -1,33 +1,198 @@
-void UDP()
+uint8_t initUDP()
 {
 	sim900.gsmSleepMode0();
-	sendGPRScmd ("AT+CIPMUX=0","OK",3000,true,0);
-	//sendGPRScmd ("AT+CSTT=\"wholesale\"","OK",3000,true,0);
-	//sendGPRScmd ("AT+CSTT=\"telnamobile.com\"","OK",3000,true,0);
-	sendGPRScmd("AT+CSTT=\"epc.tmobile.com\"","OK",10000,true,0);
-	sendGPRScmd ("AT+CIICR","OK",10000,true,0);
-	sendGPRScmd ("AT+CIFSR","OK",5000,true,0);
-	sendGPRScmd ("AT+CIPSTART=\"UDP\",\"193.193.165.166\",\"20332\"","OK",2000,true,0);
-	sendGPRScmd ("AT+CIPSEND",">",3000,true,0);
-	GSM.print("012896006334665#SD#");
-
-	GSM.print("070413;");
-	GSM.print("011100;");
-	GSM.print("4428.7641;N;");
-	GSM.print("07023.2717;W;"); // zero in front
-	GSM.print("NA;");
-	GSM.print("NA;");
-	GSM.print("NA;");
-	GSM.println("NA");
+	if(!sendGPRScmd ("AT+CGATT?","OK",3000,true,0))
+		return 1;
+	if(!sendGPRScmd ("AT+CIPSHUT","OK",3000,true,0))
+		return 2;
+	if(!sendGPRScmd ("AT+CSTT=\"wholesale\"","OK",3000,true,0))
+	//if(!sendGPRScmd ("AT+CSTT=\"telnamobile.com\"","OK",3000,true,0))
+	//if(!sendGPRScmd("AT+CSTT=\"epc.tmobile.com\"","OK",10000,true,0))
+		return 3;
+	if(!sendGPRScmd ("AT+CIICR","OK",10000,true,0))
+		return 4;
+	if(!sendGPRScmd ("AT+CIFSR",".",5000,true,0))
+		return 5;
+	if(!sendGPRScmd ("AT+CIPSTART=\"UDP\",\"193.193.165.166\",\"20332\"","CONNECT OK",2000,true,0))
+		return 6;
+	if(!sendGPRScmd ("AT+CIPSTATUS","PDP DEACT",3000,true,0))
+		return 7;
+	udp &= ~(0x02);
+	return 0;
 	
-/*	GSM.print(lastValid.orangeDate);
+}
+
+
+/***** New Send AT command to cover everything ********
+Requirements
+	- send AT Command
+	- send additional AT Command parameters
+	- send 0x1A to send byte
+	- send 0x1B to cancel send
+	- send string from EEPROM address
+	
+	- check OK      		bit 0
+	- check ERROR   		bit 1
+	- check passed string 	bit 2
+	
+	- number of retries
+	
+	- option for flush() on entrance  bit 0
+	- option for flush() on exit      bit 1
+	- option to use print or println  bit 2
+	
+uint8_t sendAtCommand(const char* atCommand, const char* response, uint8_t checks, uint8_t options, uint8_t retries, unsigned long timeout, boolean useArg, const char* argument)
+{
+	uint8_t index = 0;
+	char rxBuffer[22];
+	unsigned long tOut;
+	for(uint8_t nr = 0; nr < retries; nr++)
+	{
+		if(options & 0x01)
+			GSM.flush();
+		GSM.print(atCommand);
+		if(useArg)
+			GSM.print(argument);
+		if(options & 0x04)
+			GSM.println();
+		timeout = millis();
+		index = 0;
+		while (millis() - tOut <= timeout)
+		{
+			if(GSM.available())
+			{
+				rxBuffer[index] = GSM.read();
+				index++;
+				rxBuffer[index] = '\0';
+				if((strstr(rxBuffer,"OK") != NULL) && (checks & 0x01))
+				{
+					if(options & 0x02)
+						GSM.flush();
+					return 0;
+				}
+				if((strstr(rxBuffer,"ERROR") != NULL) && (checks & 0x02))
+				{
+					if(options & 0x02)
+						GSM.flush();
+					return 1;
+				}
+				if((strstr(rxBuffer,response) != NULL) && (checks & 0x04))
+				{
+					if(options & 0x02)
+						GSM.flush();
+					return 0;
+				}
+				if((rxBuffer[index-1] = '\n') || (index == 21))  //keeps buffer size low
+					index = 0;
+			}
+		}
+	}
+	if(options & 0x02)
+		GSM.flush();
+	return 2;
+}
+
+
+
+******************************************************/
+
+
+uint8_t sendAtCommand(const char* atCommand, const char* response, uint8_t checks, uint8_t options, uint8_t retries, unsigned long timeout, boolean useArg, const char* argument)
+{
+	uint8_t index = 0;
+	char rxBuffer[22];
+	unsigned long tOut;
+	for(uint8_t nr = 0; nr < retries; nr++)
+	{
+		if(options & 0x01)
+			GSM.flush();
+		GSM.print(atCommand);
+		if(useArg)
+			GSM.print(argument);
+		if(options & 0x04)
+			GSM.println();
+		timeout = millis();
+		index = 0;
+		while (millis() - tOut <= timeout)
+		{
+			if(GSM.available())
+			{
+				rxBuffer[index] = GSM.read();
+				index++;
+				rxBuffer[index] = '\0';
+				if((strstr(rxBuffer,"OK") != NULL) && (checks & 0x01))
+				{
+					if(options & 0x02)
+						GSM.flush();
+					return 0;
+				}
+				if((strstr(rxBuffer,"ERROR") != NULL) && (checks & 0x02))
+				{
+					if(options & 0x02)
+						GSM.flush();
+					return 1;
+				}
+				if((strstr(rxBuffer,response) != NULL) && (checks & 0x04))
+				{
+					if(options & 0x02)
+						GSM.flush();
+					return 0;
+				}
+				if((rxBuffer[index-1] = '\n') || (index == 21))  //keeps buffer size low
+					index = 0;
+			}
+		}
+	}
+	if(options & 0x02)
+		GSM.flush();
+	return 2;
+}
+
+
+void UDP()
+{
+	if(udp & 0x02)
+		if(initUDP())
+			return;
+	sim900.gsmSleepMode0();
+	if(!sendAtCommand("AT+CGATT?",": 1",0x04,0x07,0,2000,false,NULL))
+//	if(!sendGPRScmd ("AT+CGATT?","OK",3000,true,0))
+		return;
+/*	if(sendGPRScmd ("AT+CIPSTATUS","PDP DEACT",100,true,0))
+	{
+		sendGPRScmd ("AT+CIPSHUT","OK",1000,true,0);
+		return;
+	}*/
+/*	sendGPRScmd ("AT+CSTT=\"wholesale\"","OK",3000,true,0);
+	//sendGPRScmd ("AT+CSTT=\"telnamobile.com\"","OK",3000,true,0);
+	//sendGPRScmd("AT+CSTT=\"epc.tmobile.com\"","OK",10000,true,0);
+	sendGPRScmd ("AT+CIICR","OK",10000,true,0);*/
+	
+	if(!sendAtCommand("AT+CIFSR",".",0x04,0x07,0,5000,false,NULL))
+//	if(!sendGPRScmd ("AT+CIFSR",".",5000,true,0))
+	{
+		udp |= 0x02;
+		return;
+	}
+//	sendGPRScmd ("AT+CIPSTART=\"UDP\",\"193.193.165.166\",\"20332\"","CONNECT OK",2000,true,0);
+	if(!sendAtCommand("AT+CIPSEND",">",0x04,0x07,0,3000,false,NULL))
+//	if(!sendGPRScmd ("AT+CIPSEND",">",3000,true,0))
+	{
+		udp |= 0x02;
+		return;
+	}
+	GSM.print("012896006334665#SD#");
+//	GSM.print(lastValid.orangeDate);
+	GSM.print("NA");
 	GSM.print(";");
-	GSM.print(lastValid.orangeTime);
+//	GSM.print(lastValid.orangeTime);
+	GSM.print("NA");
 	GSM.print(";");
 	GSM.print(lastValid.orangeLat,4);
 	GSM.print(";");
 	GSM.print(lastValid.orangeNS);
 	GSM.print(";");
+	GSM.print("0");
 	GSM.print(lastValid.orangeLon,4);
 	GSM.print(";");
 	GSM.print(lastValid.orangeEW);
@@ -38,13 +203,19 @@ void UDP()
 	GSM.print(";");
 	GSM.print(lastValid.orangeAltitude);
 	GSM.print(";");
-	GSM.println("NA");*/
+	GSM.println("NA");
+	GSM.println(0x1A,BYTE);
+	if(!sendGPRScmd ("","SEND OK",3000,false,0))
+	{
+		udp |= 0x02;
+		return;
+	}
+    sendGPRScmd ("","#ASD#1",1000,false,0);
+	udp = 0;
 	
-	
-	GSM.print(0x1A,BYTE);
-    delay(10000);
-    sendGPRScmd ("AT+CIPCLOSE","OK",2000,true,0);
-	sendGPRScmd ("AT+CIPSHUT","OK",2000,true,0);
+	sendAtCommand("AT+CIPCLOSE",NULL,0x01,0x07,0,3000,false,NULL);
+//	sendGPRScmd ("AT+CIPCLOSE","OK",2000,true,0);
+//	sendGPRScmd ("AT+CIPSHUT","OK",2000,true,0);
 }
 
 void udpSetup()

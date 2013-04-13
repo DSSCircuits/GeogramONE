@@ -30,6 +30,7 @@ volatile uint8_t d10Switch = 0x00;
 uint8_t cmd0 = 0;
 uint8_t cmd1 = 0;
 uint8_t cmd3 = 0;
+uint8_t udp = 0x02; //bit 1 is for UDP setup, bit 0 is for UDP send
 
 uint8_t fence1 = 0;
 uint8_t fence2 = 0;
@@ -121,8 +122,7 @@ void loop()
 				else if(smsData.smsCmdNum == 7)
 					command7();
 				else if(smsData.smsCmdNum == 9)
-					//udpSetup();
-					UDP();
+					udp |= 0x01;
 			}
 		}
 	}
@@ -132,6 +132,8 @@ void loop()
 		command1();
 	if(cmd3)
 		command3();
+	if(udp)
+		UDP();
 	if(battery)
 	{
 		if(!sim900.sendMessage(2,smsData.smsNumber,NULL,BATTERYMSG))
