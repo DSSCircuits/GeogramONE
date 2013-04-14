@@ -1,10 +1,12 @@
 uint8_t initUDP()
 {
 	sim900.gsmSleepMode0();
-	if(!sendGPRScmd ("AT+CGATT?","OK",3000,true,0))
+	if(!sendGPRScmd ("AT+CGATT?",": 1",3000,true,0))
 		return 1;
+	delay(500);
 	if(!sendGPRScmd ("AT+CIPSHUT","OK",3000,true,0))
 		return 2;
+	delay(500);
 	if(!sendGPRScmd ("AT+CSTT=\"wholesale\"","OK",3000,true,0))
 	//if(!sendGPRScmd ("AT+CSTT=\"telnamobile.com\"","OK",3000,true,0))
 	//if(!sendGPRScmd("AT+CSTT=\"epc.tmobile.com\"","OK",10000,true,0))
@@ -19,7 +21,6 @@ uint8_t initUDP()
 		return 7;
 	udp &= ~(0x02);
 	return 0;
-	
 }
 
 
@@ -148,7 +149,89 @@ uint8_t sendAtCommand(const char* atCommand, const char* response, uint8_t check
 	return 2;
 }
 
+void UDP()
+{
+//	if(udp & 0x02)
+//		if(initUDP())
+//			return;
+	sim900.gsmSleepMode0();
+	if(!sendGPRScmd ("AT+CGATT?",": 1",3000,true,0))
+		return;
+	sendGPRScmd ("AT+CSTT=\"wholesale\"","OK",3000,true,0);
+	//if(!sendGPRScmd ("AT+CSTT=\"telnamobile.com\"","OK",3000,true,0))
+	//if(!sendGPRScmd("AT+CSTT=\"epc.tmobile.com\"","OK",10000,true,0))
+	sendGPRScmd ("AT+CIICR","OK",5000,true,0);
+	delay(500);
+	sendGPRScmd ("AT+CIFSR",".",2000,true,0);
+/*	if(!sendGPRScmd ("AT+CIFSR",".",5000,true,0))
+	{
+		udp |= 0x02;
+		return;
+	}*/
+	sendGPRScmd ("AT+CIPSTART=\"UDP\",\"193.193.165.166\",\"20332\"","CONNECT OK",2000,true,0);
+	sendGPRScmd ("AT+CIPSEND",">",3000,true,0);
+/*	if(!sendGPRScmd ("AT+CIPSEND",">",3000,true,0))
+	{
+		udp |= 0x02;
+		return;
+	}*/
+	GSM.print("012896006334665#SD#");
+	GSM.print("NA");
+	GSM.print(";");
+	GSM.print("NA");
+	GSM.print(";");
+	GSM.print(lastValid.orangeLat,4);
+	GSM.print(";");
+	GSM.print(lastValid.orangeNS);
+	GSM.print(";");
+	GSM.print("0");
+	GSM.print(lastValid.orangeLon,4);
+	GSM.print(";");
+	GSM.print(lastValid.orangeEW);
+	GSM.print(";");
+	GSM.print(lastValid.orangeSpeed);
+	GSM.print(";");
+	GSM.print(lastValid.orangeCourse);
+	GSM.print(";");
+	GSM.print(lastValid.orangeAltitude);
+	GSM.print(";");
+	GSM.println("NA");
+	GSM.println(0x1A,BYTE);
+	char rxBuffer[30];
+	uint8_t cIndex = 0;
+	unsigned long tOut = millis();
+	while ((millis() - tOut) <= 3000)
+	{
+		if(GSM.available())
+		{
+			rxBuffer[cIndex] = GSM.read();
+			cIndex++;
+			rxBuffer[cIndex] = '\0';
+			if(strstr(rxBuffer,"#ASD#") != NULL)
+			{
+				udp = 0;
+				sendGPRScmd ("AT+CIPCLOSE","OK",2000,true,0);
+				return;
+			}
+			if((rxBuffer[cIndex - 1] == '\n') || (rxBuffer[cIndex - 1] == ';'))
+				cIndex = 0;
+		}
+	
+	}
+	if(sendGPRScmd ("AT+CIPSTATUS","PDP DEACT",3000,true,0))
+	{
+		sendGPRScmd ("AT+CIPSHUT","OK",3000,true,0);
+		
+	//	udp |= 0x02;
+		return;
+	}
+//	return;
+	udp = 0;
+	sendGPRScmd ("AT+CIPCLOSE","OK",2000,true,0);
+}
 
+
+/*
 void UDP()
 {
 	if(udp & 0x02)
@@ -158,15 +241,15 @@ void UDP()
 	if(!sendAtCommand("AT+CGATT?",": 1",0x04,0x07,0,2000,false,NULL))
 //	if(!sendGPRScmd ("AT+CGATT?","OK",3000,true,0))
 		return;
-/*	if(sendGPRScmd ("AT+CIPSTATUS","PDP DEACT",100,true,0))
-	{
-		sendGPRScmd ("AT+CIPSHUT","OK",1000,true,0);
-		return;
-	}*/
-/*	sendGPRScmd ("AT+CSTT=\"wholesale\"","OK",3000,true,0);
+//	if(sendGPRScmd ("AT+CIPSTATUS","PDP DEACT",100,true,0))
+//	{
+//		sendGPRScmd ("AT+CIPSHUT","OK",1000,true,0);
+//		return;
+//	}
+//	sendGPRScmd ("AT+CSTT=\"wholesale\"","OK",3000,true,0);
 	//sendGPRScmd ("AT+CSTT=\"telnamobile.com\"","OK",3000,true,0);
 	//sendGPRScmd("AT+CSTT=\"epc.tmobile.com\"","OK",10000,true,0);
-	sendGPRScmd ("AT+CIICR","OK",10000,true,0);*/
+//	sendGPRScmd ("AT+CIICR","OK",10000,true,0);
 	
 	if(!sendAtCommand("AT+CIFSR",".",0x04,0x07,0,5000,false,NULL))
 //	if(!sendGPRScmd ("AT+CIFSR",".",5000,true,0))
@@ -216,7 +299,7 @@ void UDP()
 	sendAtCommand("AT+CIPCLOSE",NULL,0x01,0x07,0,3000,false,NULL);
 //	sendGPRScmd ("AT+CIPCLOSE","OK",2000,true,0);
 //	sendGPRScmd ("AT+CIPSHUT","OK",2000,true,0);
-}
+}*/
 
 void udpSetup()
 {
@@ -383,30 +466,18 @@ void ShowSerialData()
 }
 
 boolean sendGPRScmd (char *cmd, char *waitFor, unsigned long atTimeOut, boolean pnl, int tries) {
-    //delay(1000); 
-	//sim900.gsmSleepMode0();
     char atCommand[55];// was 16 
     strcpy(atCommand,cmd);
     unsigned long atimeOut=millis();
     char buffer[200];
     int i=0;  
-  
-    //Serial.println("START");
     GSM.flush();
     if(pnl)GSM.println(cmd);
     else GSM.print(cmd);
-    
-/*    if(tries>=3){
-      Serial.println("3 TRIES - FAILED"); 
-      return false;   
-    }
- */   
     tries++; 
     while ((millis() - atimeOut) <= atTimeOut){
       if(GSM.available()){
-       // Serial.write(GSM.read());
         buffer[i]=GSM.read();
-//       Serial.write(buffer[i]);
         i++;
         buffer[i] = '\0';
         if(strstr(buffer,atCommand)!=NULL){
@@ -414,16 +485,11 @@ boolean sendGPRScmd (char *cmd, char *waitFor, unsigned long atTimeOut, boolean 
           buffer[i]='\0';
         }
         if(strstr(buffer,"ERROR")!=NULL){ //if there is an error send AT command again
-//          Serial.println("RETRY");
           return 0;//sendGPRScmd (cmd,waitFor,atTimeOut,pnl,tries);
         }
         if(strstr(buffer,waitFor)!=NULL){ 
-//           Serial.println("FOUND");
             return true;
         }
       }
     }
-//    Serial.println("TIMEOUT");
-//    Serial.println("RETRY");
-//    return sendGPRScmd (cmd,waitFor,atTimeOut,pnl,tries);
 }
