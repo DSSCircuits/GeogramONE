@@ -151,83 +151,80 @@ uint8_t sendAtCommand(const char* atCommand, const char* response, uint8_t check
 
 void UDP()
 {
-//	if(udp & 0x02)
-//		if(initUDP())
-//			return;
-	sim900.gsmSleepMode0();
+//	sim900.gsmSleepMode0();
+	if(!lastValid.signalLock)
+		return;
 	if(!sendGPRScmd ("AT+CGATT?",": 1",3000,true,0))
 		return;
-	sendGPRScmd ("AT+CSTT=\"wholesale\"","OK",3000,true,0);
-	//if(!sendGPRScmd ("AT+CSTT=\"telnamobile.com\"","OK",3000,true,0))
-	//if(!sendGPRScmd("AT+CSTT=\"epc.tmobile.com\"","OK",10000,true,0))
-	sendGPRScmd ("AT+CIICR","OK",5000,true,0);
-	delay(500);
-	sendGPRScmd ("AT+CIFSR",".",2000,true,0);
-/*	if(!sendGPRScmd ("AT+CIFSR",".",5000,true,0))
-	{
-		udp |= 0x02;
-		return;
-	}*/
-	sendGPRScmd ("AT+CIPSTART=\"UDP\",\"193.193.165.166\",\"20332\"","CONNECT OK",2000,true,0);
-	sendGPRScmd ("AT+CIPSEND",">",3000,true,0);
-/*	if(!sendGPRScmd ("AT+CIPSEND",">",3000,true,0))
-	{
-		udp |= 0x02;
-		return;
-	}*/
-	GSM.print("012896006334665#SD#");
-	GSM.print("NA");
-	GSM.print(";");
-	GSM.print("NA");
-	GSM.print(";");
-	GSM.print(lastValid.orangeLat,4);
-	GSM.print(";");
-	GSM.print(lastValid.orangeNS);
-	GSM.print(";");
-	GSM.print("0");
-	GSM.print(lastValid.orangeLon,4);
-	GSM.print(";");
-	GSM.print(lastValid.orangeEW);
-	GSM.print(";");
-	GSM.print(lastValid.orangeSpeed);
-	GSM.print(";");
-	GSM.print(lastValid.orangeCourse);
-	GSM.print(";");
-	GSM.print(lastValid.orangeAltitude);
-	GSM.print(";");
-	GSM.println("NA");
-	GSM.println(0x1A,BYTE);
-	char rxBuffer[30];
-	uint8_t cIndex = 0;
-	unsigned long tOut = millis();
-	while ((millis() - tOut) <= 3000)
-	{
-		if(GSM.available())
+//	delay(100);
+//	if(sendGPRScmd ("AT+CIPSTART=\"UDP\",\"193.193.165.166\",\"20332\"","CONNECT OK",2000,true,0))
+//	{
+		if(sendGPRScmd ("AT+CIPSEND",">",3000,true,0))
 		{
-			rxBuffer[cIndex] = GSM.read();
-			cIndex++;
-			rxBuffer[cIndex] = '\0';
-			if(strstr(rxBuffer,"#ASD#") != NULL)
+			GSM.print("012896006334665#SD#");
+			GSM.print("NA");
+			GSM.print(";");
+			GSM.print("NA");
+			GSM.print(";");
+			GSM.print(lastValid.orangeLat,4);
+			GSM.print(";");
+			GSM.print(lastValid.orangeNS);
+			GSM.print(";");
+			GSM.print("0");
+			GSM.print(lastValid.orangeLon,4);
+			GSM.print(";");
+			GSM.print(lastValid.orangeEW);
+			GSM.print(";");
+			GSM.print(lastValid.orangeSpeed);
+			GSM.print(";");
+			GSM.print(lastValid.orangeCourse);
+			GSM.print(";");
+			GSM.print(lastValid.orangeAltitude);
+			GSM.print(";");
+			GSM.println("NA");
+			GSM.println(0x1A,BYTE);
+			char rxBuffer[30];
+			uint8_t cIndex = 0;
+			unsigned long tOut = millis();
+			while ((millis() - tOut) <= 3000)
 			{
-				udp = 0;
-				sendGPRScmd ("AT+CIPCLOSE","OK",2000,true,0);
-				return;
+				if(GSM.available())
+				{
+					rxBuffer[cIndex] = GSM.read();
+					cIndex++;
+					rxBuffer[cIndex] = '\0';
+					if(strstr(rxBuffer,"#ASD#") != NULL)
+					{
+						udp = 0;
+					//	sendGPRScmd ("AT+CIPCLOSE","OK",2000,true,0);
+						return;
+					}
+					if((rxBuffer[cIndex - 1] == '\n') || (rxBuffer[cIndex - 1] == ';'))
+						cIndex = 0;
+				}
 			}
-			if((rxBuffer[cIndex - 1] == '\n') || (rxBuffer[cIndex - 1] == ';'))
-				cIndex = 0;
 		}
-	
-	}
+//	}
 	if(sendGPRScmd ("AT+CIPSTATUS","PDP DEACT",3000,true,0))
 	{
+		sim900.gsmSleepMode0();
 		sendGPRScmd ("AT+CIPSHUT","OK",3000,true,0);
+		sendGPRScmd ("AT+CSTT=\"wholesale\"","OK",3000,true,0);
+		//sendGPRScmd ("AT+CSTT=\"telnamobile.com\"","OK",3000,true,0);
+		//sendGPRScmd("AT+CSTT=\"epc.tmobile.com\"","OK",10000,true,0);
+		sendGPRScmd ("AT+CIICR","OK",5000,true,0);
+		delay(100);
+		sendGPRScmd ("AT+CIFSR",".",2000,true,0);
 		
-	//	udp |= 0x02;
+		
+		
 		return;
 	}
-//	return;
-	udp = 0;
-	sendGPRScmd ("AT+CIPCLOSE","OK",2000,true,0);
+	udp = 1; //was a zero before
+	
+	sendGPRScmd ("AT+CIPSTART=\"UDP\",\"193.193.165.166\",\"20332\"","CONNECT OK",2000,true,0);
+	
+//	sendGPRScmd ("AT+CIPCLOSE","OK",2000,true,0);
 }
 
 

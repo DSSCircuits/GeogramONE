@@ -91,6 +91,10 @@ uint8_t PA6C::getCoordinates(gpsData *lastKnown)
 					directionOfTravel(&currentPosition);
 					*lastKnown = currentPosition;
 					sentenceID = 0x00;
+					if(currentPosition.rmcStatus == 'A')
+						lastKnown->signalLock = true;
+					else
+						lastKnown->signalLock = false;
 					return 0;
 				}
 				break;
@@ -240,7 +244,7 @@ void PA6C::filterData(char *fieldData, gpsData *current, uint8_t *sID, uint8_t *
 				break;
 			case 7:
 				{
-					current->orangeSpeed = atol(fieldData); //orange
+					current->orangeSpeed = (atol(fieldData) * KNOTSTOKPH); //orange
 					float spK = atof(fieldData);
 					if(speedType == 1)
 						current->speed = (uint16_t)(spK * KNOTSTOMPH);

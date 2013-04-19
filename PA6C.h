@@ -59,6 +59,7 @@ struct gpsData
 	long orangeSpeed;
 	char orangeNS;
 	char orangeEW;
+	bool signalLock;
 	
 /*****************************/
 	
