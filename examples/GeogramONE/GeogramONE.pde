@@ -99,6 +99,7 @@ void loop()
 	gps.getCoordinates(&lastValid);
 	if(call)
 	{
+		sim900.gsmSleepMode(0);
 		if(!sim900.getGeo(&smsData))
 		{
 			if(!smsData.smsPending)
@@ -125,6 +126,7 @@ void loop()
 					udp |= 0x01;
 			}
 		}
+		sim900.gsmSleepMode(2);	
 	}
 	if(cmd0)
 		command0();
@@ -136,11 +138,13 @@ void loop()
 		UDP();
 	if(battery)
 	{
+		sim900.gsmSleepMode(0);
 		if(!sim900.sendMessage(2,smsData.smsNumber,NULL,BATTERYMSG))
 		{
 			battery = 0;
 			MAX17043clearAlertFlag();
 		}
+		sim900.gsmSleepMode(2);
 	}
 	if(charge & 0x02)
 		chargerStatus();
@@ -168,9 +172,11 @@ void loop()
 		else
 			breach1Conf = 0;
 		if(fence1 == 2)
-		{  
+		{
+			sim900.gsmSleepMode(0);
 			if(!sim900.sendMessage(2,smsData.smsNumber,NULL,FENCE1MSG))
 				fence1 = 0;
+			sim900.gsmSleepMode(2);
 		}
 	} 
 	if(fence2)
@@ -198,8 +204,10 @@ void loop()
 			breach2Conf = 0;
 		if(fence2 == 2)
 		{  
+			sim900.gsmSleepMode(0);
 			if(!sim900.sendMessage(2,smsData.smsNumber,NULL,FENCE2MSG))
 				fence2 = 0;
+			sim900.gsmSleepMode(2);
 		}
 	}	
 	if(fence3)
@@ -227,8 +235,10 @@ void loop()
 			breach3Conf = 0;
 		if(fence3 == 2)
 		{  
+			sim900.gsmSleepMode(0);
 			if(!sim900.sendMessage(2,smsData.smsNumber,NULL,FENCE3MSG))
 				fence3 = 0;
+			sim900.gsmSleepMode(2);
 		}
 	}
 	if(timeInterval)
@@ -237,13 +247,17 @@ void loop()
 		sleepTimer();
 	if(d4Switch)
 	{
+		sim900.gsmSleepMode(0);
 		if(!sim900.sendMessage(2,smsData.smsNumber,NULL,D4MSG))
 			d4Switch = 0x00;
+		sim900.gsmSleepMode(2);
 	}
 	if(d10Switch)
 	{
+		sim900.gsmSleepMode(0);
 		if(!sim900.sendMessage(2,smsData.smsNumber,NULL,D10MSG))
 			d10Switch = 0x00;
+		sim900.gsmSleepMode(2);
 	}
 	
 	

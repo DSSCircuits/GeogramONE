@@ -1,5 +1,5 @@
 #include <AltSoftSerial.h>
-//#include <avr/pgmspace.h>
+#include <avr/pgmspace.h>
 #include <EEPROM.h>
 
 #ifndef SIM900_h
@@ -16,24 +16,6 @@
 #define GSMSWITCH       6
 #define PINCODE         0
 #define SIMSIZE			20
-
-#define IPR				"AT+IPR=9600"  	//basic
-#define CMGR			"AT+CMGR=" 		//ext
-#define CMGD			"AT+CMGD="		//basic
-#define CPMS			"AT+CPMS?"		//ext
-#define CMGF			"AT+CMGF=1"	//basic
-#define CNMI			"AT+CNMI=0,0,0,0,0"	//basic
-#define CREG			"AT+CREG?"		//ext
-#define CSCLK			"AT+CSCLK="		//basic
-#define CPOWD			"AT+CPOWD=1"	//
-#define CMGDA			"AT+CMGDA=\"DEL ALL\""	//basic
-#define CMEE			"AT+CMEE=1" 	//basic
-#define CSQ				"AT+CSQ" 		//ext
-
-#define	OK				"OK"
-#define	ERROR			"ERROR"
-#define CALLREADY		"Call Ready\r\n"
-
 
 #define AT_TO			200L    	//1000
 #define CMGR_TO			15000L	//15000
@@ -54,6 +36,10 @@
 
 #define DEBUGON			1
 
+#define INDEX_SIZE		100
+#define DELIMITER		"."
+#define OK				"OK"
+
 /*******EEPROM ADDRESSES**********/
 #define PINCODE					0
 #define SMSADDRESS				5
@@ -64,8 +50,8 @@
 struct simSmsData
 {
     char smsNumber[39];
-    char smsDate[11];
-    char smsTime[13];
+//    char smsDate[11];
+//    char smsTime[13];
 	char smsPwd[5];
 	uint8_t smsCmdNum;
 	char smsCmdString[30];
@@ -80,43 +66,34 @@ struct geoSmsData
 	uint8_t smsPending;
 };
 
-struct textMessage
-{
-	char smsAddress[39];
-	bool smsType;
-	char message[50];
-};
-
-
 class SIM900 
 {
 	public:
 		SIM900(AltSoftSerial *ser);
+		char atRxBuffer[INDEX_SIZE];
 		uint8_t init(unsigned long);
 		uint8_t checkForMessages();
-		bool deleteMessage(int);
+		uint8_t deleteMessage(int);
 		uint8_t readMessageBreakOut(simSmsData *, int);
-		uint8_t readTextMessage(textMessage *);
 		uint8_t sendMessage(uint8_t, char *, const char *, uint16_t eepromMsgAddress = 1024);
 		uint8_t goesWhere(char *);
 		uint8_t confirmPassword(char *, char *);
-		bool deleteAllMessages();
+		uint8_t deleteAllMessages();
 		uint8_t getCommand(char *);
-		bool gsmSleepMode0();
-		bool gsmSleepMode2();
-		uint8_t signalQuality(bool wakeUpComm = false);
+		uint8_t gsmSleepMode(int);
+		uint8_t signalQuality();
 		uint8_t powerDownGSM();
 		uint8_t getGeo(geoSmsData *);
 		void printLatLon(long *, long *);
+		uint8_t confirmAtCommand(char *, unsigned long);
 	private:
-		bool atNoData(const char *, unsigned long, int argument = 0xFF);
+		void printPROGMEM(int, int atArg = 0xFF);
 		uint8_t totalMsg;
 		uint8_t currentMsg;
 		uint8_t powerOnGSM();
 		void initializeGSM();
-		bool checkNetworkRegistration();
-		bool sendATCommandBasic(char*, uint8_t, unsigned long);
-		bool callReady();
+		uint8_t checkNetworkRegistration();
+		uint8_t callReady();
 		AltSoftSerial *GSM;
 };
 

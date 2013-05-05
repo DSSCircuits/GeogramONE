@@ -1,8 +1,9 @@
 
 void command0()  //send coordinates
 {
+	sim900.gsmSleepMode(0);
 	uint16_t geoDataFormat;
-	uint8_t rssi = sim900.signalQuality(1);
+	uint8_t rssi = sim900.signalQuality();
 	uint8_t tFormat = EEPROM.read(TIMEFORMAT);
 	EEPROM_readAnything(GEODATAFORMAT2,geoDataFormat);
 	if(sim900.sendMessage(0,smsData.smsNumber,NULL))
@@ -14,6 +15,7 @@ void command0()  //send coordinates
 	GSM.println();
 	if(!sim900.sendMessage(3,NULL,NULL))
 		cmd0 = 0;
+	sim900.gsmSleepMode(2);
 }
 
 void printList(uint16_t *dataFormat, uint8_t rssi)
@@ -57,52 +59,68 @@ void printList(uint16_t *dataFormat, uint8_t rssi)
 	}
 	if(*dataFormat & 0x0008)
 	{
-		GSM.print(lastValid.speed,DEC);
+		#if USESPEEDKNOTS
+		GSM.print(lastValid.speedKnots,DEC);
+		#endif
 		GSM.print(",");
 	}
 	if(*dataFormat & 0x0010)
 	{
+		#if USECOURSE
 		GSM.print(lastValid.courseDirection);
+		#endif
 		GSM.print(",");
 	}
 	if(*dataFormat & 0x0020)
 	{
+		#if USEALTITUDE
 		GSM.print(lastValid.altitude,2);
+		#endif
 		GSM.print(",");
 	}
 	if(*dataFormat & 0x0040)
 	{
+		#if USEHDOP
 		GSM.print(lastValid.hdop,DEC);
+		#endif
 		GSM.print(",");
 	}
 	if(*dataFormat & 0x0080)
 	{
+		#if USEVDOP
 		GSM.print(lastValid.vdop,DEC);
+		#endif
 		GSM.print(",");
 	}
 	if(*dataFormat & 0x0100)
 	{
+		#if USEPDOP
 		GSM.print(lastValid.pdop,DEC);
+		#endif
 		GSM.print(",");
 	}
 	if(*dataFormat & 0x0200)
 	{
+		#if USESATELLITESUSED
 		GSM.print(lastValid.satellitesUsed,DEC);
+		#endif
 		GSM.print(",");
 	}
 	if(*dataFormat & 0x0400)
 	{
+		#if USEMODE2
 		GSM.print(lastValid.mode2,DEC);
+		#endif
 		GSM.print(",");
 	}
 	if(*dataFormat & 0x0800)
 	{
-		GSM.print(MAX17043getBatterySOC()/100,DEC);
+		GSM.print(max17043.getBatterySOC()/100,DEC);
 		GSM.print(",");
 	}
 	if(*dataFormat & 0x1000)
 	{
-		GSM.print(MAX17043getBatteryVoltage()*0.00125,2);
+		GSM.print(max17043.getBatteryVoltage()/1000.0,2);
 		GSM.print(",");
 	}
 	if(*dataFormat & 0x2000)

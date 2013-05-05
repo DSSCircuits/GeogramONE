@@ -19,9 +19,7 @@ template <class T> int EEPROM_readAnything(int ee, T& value)
     return i;
 }
 
-
-const char* DELIMITER = ".";
-
+//const char* DELIMITER = ".";
 
 SIM900::SIM900(AltSoftSerial *ser)
 {
@@ -37,23 +35,40 @@ uint8_t SIM900::init(unsigned long baudRate)
 	GSM->begin(baudRate);
 	totalMsg = 0;
 	initializeGSM();
-	gsmSleepMode2();
+	gsmSleepMode(2);
 }
 
-bool SIM900::gsmSleepMode0()
+uint8_t SIM900::gsmSleepMode(int mode)
 {
 	GSM->println("AT\r\nAT");
 	delay(50);
-	return(atNoData(CSCLK,CSCLK_TO,0));
+	GSM->print("AT+CSCLK=");
+	GSM->println(mode);
+	return(confirmAtCommand("OK",CSCLK_TO));
 }
 
-bool SIM900::gsmSleepMode2()
+
+uint8_t SIM900::confirmAtCommand(char *returnCode, unsigned long atTimeOut)
 {
-	GSM->println("AT\r\nAT");
-	delay(50);
-	return(atNoData(CSCLK,CSCLK_TO,2));
+	uint8_t index = 0;
+	unsigned long timeOut = millis();
+	while((millis() - timeOut) <= atTimeOut)
+	{
+		if (GSM->available())
+		{
+			atRxBuffer[index] = GSM->read();
+			index++;
+			atRxBuffer[index] = '\0';
+			if(strstr(atRxBuffer,returnCode) != NULL)
+				return 0;
+			if(strstr(atRxBuffer,"ERROR") != NULL)
+				return 1;
+			if(index >= (INDEX_SIZE - 1))
+				return 2;	
+		}
+	}
+	return 3;
 }
-
 
 /*************************************************************	
 	Procedure to power on the GSM module.  It will first check 
@@ -61,7 +76,6 @@ bool SIM900::gsmSleepMode2()
 	RETURN:
 		0		GSM turned on successfully or was already on
 		1		GSM module did not turn on
-		2		GSM was already on
 **************************************************************/
 uint8_t SIM900::powerOnGSM(){
 	if(digitalRead(GSMSTATUS))
@@ -88,10 +102,8 @@ uint8_t SIM900::powerOnGSM(){
 **************************************************************/
 uint8_t SIM900::powerDownGSM()
 {
-	char rxBuffer[50];
-	gsmSleepMode2();
-	GSM->println(CPOWD);
-	sendATCommandBasic(rxBuffer,50,CPOWD_TO);
+	GSM->println("AT+CPOWD=1");
+	confirmAtCommand("DOWN",CPOWD_TO);
 	if(!digitalRead(GSMSTATUS))
 		return 1; //GSM did not power off successfully
 	return 0;
@@ -102,130 +114,76 @@ void SIM900::initializeGSM()
 {
 	if(!powerOnGSM())
 		callReady();
-	atNoData(CMEE,CMEE_TO); //CMEE
-	atNoData(IPR,IPR_TO); //IPR
-	atNoData(CMGF,CMGF_TO); //CMGF
-	atNoData(CNMI,CNMI_TO); //CNMI
+	GSM->println("AT+CMEE=1");
+	confirmAtCommand("OK",CMEE_TO);
+	GSM->println("AT+IPR=9600");
+	confirmAtCommand("OK",IPR_TO);
+	GSM->println("AT+CMGF=1");
+	confirmAtCommand("OK",CMGF_TO);
+	GSM->println("AT+CNMI=0,0,0,0,0");
+	confirmAtCommand("OK",CNMI_TO);
 }
 
-bool SIM900::atNoData(const char *atCommand, unsigned long atTimeOut, int argument)
-{
-	uint8_t index = 0;
-	char rxBuffer[22];
-	GSM->flush();
-	GSM->print(atCommand);
-	if(argument == 0xFF)
-		GSM->println();
-	else
-		GSM->println(argument);
-	unsigned long timeOut = millis();
-	while((millis() - timeOut) <= atTimeOut)
-	{
-		if (GSM->available())
-		{
-			rxBuffer[index] = GSM->read();
-			index++;
-			rxBuffer[index] = '\0';
-			if(strstr(rxBuffer,OK) != NULL)
-				return 0;
-			if(strstr(rxBuffer,ERROR) != NULL)
-				return 1;
-			if(index == 21)
-				index = 0;
-		}
-	}
-	return 1; //timed out
-}
 
-bool SIM900::checkNetworkRegistration()
+uint8_t SIM900::checkNetworkRegistration()
 {
-	char rxBuffer[50];
-	GSM->println(CREG);
-	sendATCommandBasic(rxBuffer,50,CREG_TO);  //check network registration status
-	if((strstr(rxBuffer,",1") != NULL) || (strstr(rxBuffer,",5") != NULL))
+	GSM->println("AT+CREG?");
+	confirmAtCommand("OK",CREG_TO);
+	if(strstr(atRxBuffer,",1") != NULL || strstr(atRxBuffer,",5") != NULL)
 		return 0; //GSM is registered on the network
 	return 1; //GSM is not registered on the network
 }
 
 uint8_t SIM900::checkForMessages()
 {
-	char rxBuffer[75]; //was 100
-	GSM->println(CPMS);
-	if(sendATCommandBasic(rxBuffer,75,CPMS_TO))//check for new messages
-		return 0xFF;  
-	char *ptr = rxBuffer;
-	char *str = NULL;
+	GSM->println("AT+CPMS?");
+	if(confirmAtCommand("OK",CPMS_TO))
+		return 0xFF;
+	char *ptr = atRxBuffer;
+	char *str = NULL;	
 	ptr = strtok_r(ptr,",",&str);
 	ptr = strtok_r(NULL,",",&str);
 	return (atoi(ptr));  //Number of messages on the sim card
 }
 
-bool SIM900::deleteMessage(int msg)
+uint8_t SIM900::deleteMessage(int msg)
 {
-	return(atNoData(CMGD,CMGD_TO,msg));
+	GSM->print("AT+CMGD=");
+	GSM->println(msg);
+	return(confirmAtCommand("OK",CMGD_TO));
 }
 
-bool SIM900::deleteAllMessages()
+uint8_t SIM900::deleteAllMessages()
 {
-	return(atNoData(CMGDA,CMGDA_TO));
+	GSM->println("CMGDA=\"DEL ALL\"");
+	return(confirmAtCommand(OK,CMGD_TO));
 }
-
-
 
 uint8_t SIM900::readMessageBreakOut(simSmsData *sms, int msg)
 {
-	char rxBuffer[100];
-	char* str = NULL;
-	char* ptr = NULL;
-	uint8_t replyMessageType;
-	GSM->print(CMGR);
+	GSM->print("AT+CMGR=");
 	GSM->println(msg);
-	if(sendATCommandBasic(rxBuffer,100,CMGR_TO)){return 1;}
-	if(strlen(rxBuffer) <= 25){return 0xFF;} //if string length is under 25, SIM position was blank
-	if(strstr(rxBuffer,"@")!=NULL)
-		replyMessageType = 2; //received message type is an email
-	else
-		replyMessageType = 1; //received message type is an SMS
-	ptr = strtok_r(rxBuffer,":",&str); //pull phone number from string
-	if(replyMessageType == 1) //message is an SMS
+	if(confirmAtCommand("D\",\"",CMGR_TO))
 	{
-		ptr = strtok_r(NULL,"\"",&str);ptr = strtok_r(NULL,"\"",&str);
-		ptr = strtok_r(NULL,"\"",&str);ptr = strtok_r(NULL,"\"",&str);
-		if (strlen(ptr) < 20)  //if phone number is 20 digits or less then it's OK to use
-			strcpy(sms->smsNumber,ptr);
-		ptr = strtok_r(NULL,"\"",&str);ptr = strtok_r(NULL,"\"",&str);
-		ptr = strtok_r(NULL,",",&str);
-		strcpy(sms->smsDate,ptr);
-		ptr = strtok_r(NULL,"\"",&str);
-		strcpy(sms->smsTime,ptr);
-		sms->smsTime[8] = '\0';
-		ptr = strtok_r(NULL,"\n",&str);
-	}	
-	else if(replyMessageType == 2) //message is an email
-	{
-		ptr = strtok_r(NULL,"\"",&str);ptr = strtok_r(NULL,"\"",&str);
-		ptr = strtok_r(NULL,"\"",&str);ptr = strtok_r(NULL,"\"",&str);
-		ptr = strtok_r(NULL,"\"",&str);ptr = strtok_r(NULL,"\"",&str);
-		ptr = strtok_r(NULL,",",&str);
-		strcpy(sms->smsDate,ptr);
-		ptr = strtok_r(NULL,"\"",&str);
-		strcpy(sms->smsTime,ptr);
-		sms->smsTime[8] = '\0';
-		ptr = strtok_r(NULL,"\n",&str); 
-		ptr = strtok_r(NULL,"/",&str);
-		if (strlen(ptr) < 39)  //if email address is 39 digits or less then it's OK to use
-			strcpy(sms->smsNumber,ptr);
-		ptr = strtok_r(NULL,"/",&str);
+		if(strlen(atRxBuffer) <= 20)
+			return 0xFF;
+		return 1;
 	}
-	ptr = strtok_r(NULL,"\n",&str);
-	ptr = strtok_r(ptr,DELIMITER,&str);
-	ptr += (strlen(ptr)-4);
-	strcpy(sms->smsPwd,ptr);
-	ptr = strtok_r(NULL,DELIMITER,&str);
-	sms->smsCmdNum = atoi(ptr);
-	if(strlen(str) > 29)
-		str[29] = '\0';
-	strcpy(sms->smsCmdString,str);
+	confirmAtCommand("\"",100);
+	atRxBuffer[strlen(atRxBuffer) - 1] = '\0';
+	strcpy(sms->smsNumber,atRxBuffer);
+	confirmAtCommand("\r\n",500);
+	confirmAtCommand(DELIMITER,500);
+	atRxBuffer[strlen(atRxBuffer) - 1] = '\0';
+	strcpy(sms->smsPwd,atRxBuffer + (strlen(atRxBuffer)-4));
+	confirmAtCommand(DELIMITER,500);
+	atRxBuffer[strlen(atRxBuffer) - 1] = '\0';
+	sms->smsCmdNum = atoi(atRxBuffer);
+	confirmAtCommand(DELIMITER,500);
+	atRxBuffer[strlen(atRxBuffer) - 1] = '\0';
+	if(strlen(atRxBuffer) > 29)
+		atRxBuffer[29] = '\0';
+	strcpy(sms->smsCmdString,atRxBuffer);
 	return 0;
 }
 
@@ -235,7 +193,7 @@ uint8_t SIM900::goesWhere(char *smsAddress)
 	EEPROM_readAnything(RETURNADDCONFIG,replyOrStored);
 	for(uint8_t l = 0; l < 39; l++)
 	{
-		if(replyOrStored == 1)
+		if((replyOrStored == 1) || (replyOrStored == 3))
 			smsAddress[l] = EEPROM.read(l + SMSADDRESS);
 		else if(replyOrStored == 2)
 			smsAddress[l] = EEPROM.read(l + EMAILADDRESS);
@@ -243,6 +201,8 @@ uint8_t SIM900::goesWhere(char *smsAddress)
 			break;
 	}
 }
+
+
 
 /*************************************************************	
 	Procedure to send an SMS message.  Three options are 
@@ -278,44 +238,17 @@ uint8_t SIM900::goesWhere(char *smsAddress)
 **************************************************************/
 uint8_t SIM900::sendMessage(uint8_t smsFormat, char *smsAddress, const char *smsMessage, uint16_t eepromMsgAddress)
 {
-	char rxBuffer[20];
 	unsigned long timeOut = 0;
 	boolean ns = false;
 	if(smsFormat < 3)  //might want to put a sleepmode0 in here
 	{
-		if(!signalQuality(1))
+		if(!signalQuality())
 			return 4;
-		uint8_t addressType = 0;
-		goesWhere(smsAddress);
-		if(strstr(smsAddress,"@") != NULL){addressType = 1;} //address is an email
 		GSM->print("AT+CMGS=\"");
-		switch(addressType)
-		{
-			case 0:
-				GSM->print(smsAddress);
-				GSM->println("\"");
-				break;
-			case 1:
-				{
-					unsigned long apn;
-					EEPROM_readAnything(APN,apn);
-					GSM->print(apn,DEC);
-					GSM->println("\"");
-				}
-				break;
-		}
-		timeOut = millis();
-		while ((millis() - timeOut) <= CMGS1_TO)
-		{
-			if(GSM->available())
-			{
-				if(GSM->read() == '>')
-				{
-					ns = true;
-					break;
-				}
-			}
-		}
+		GSM->print(smsAddress);
+		GSM->println("\"");	
+		if(!confirmAtCommand(">",CMGS1_TO))
+			ns = true;
 		if(!ns)
 		{
 			GSM->println((char)0x1B); //do not send message
@@ -323,8 +256,6 @@ uint8_t SIM900::sendMessage(uint8_t smsFormat, char *smsAddress, const char *sms
 			GSM->flush();
 			return 1;  //There was an error waiting for the > 
 		} 
-		if(addressType == 1)
-			GSM->println(smsAddress);
 		if(!smsFormat)
 			return 0; //Header information successfully sent
 		if(smsFormat == 1)
@@ -353,23 +284,7 @@ uint8_t SIM900::sendMessage(uint8_t smsFormat, char *smsAddress, const char *sms
 				break;
 		}
 	}
-	uint8_t idx = 0;
-    while ((millis() - timeOut) <= CMGS2_TO)
-    {
-		if (GSM->available())
-		{
-			rxBuffer[idx] = GSM->read();
-			idx++;
-			rxBuffer[idx] = '\0';
-			if(strstr(rxBuffer,ERROR)!= NULL)
-				return 2;  // There was an error sending the SMS/email
-			if(strstr(rxBuffer,OK)!= NULL)
-				return 0;  // SMS/email successfully sent
-			if((rxBuffer[idx-1] == '\n') || (idx == 19) )
-				idx = 0;
-		}
-	}
-	return 3;  //There was a timeout error
+	return(confirmAtCommand("OK",CMGS2_TO));
 }
 
 
@@ -382,20 +297,23 @@ uint8_t SIM900::confirmPassword(char *smsPwd, char *pwd)
 
 uint8_t SIM900::getGeo(geoSmsData *retSms)
 {
+	static uint8_t l = 1;
 	simSmsData sms;
 	retSms->smsDataValid = false;
 	retSms->smsCmdNum = 0xFF;
-	if(!signalQuality(1))
+	if(!signalQuality())
 		return 3;
 	retSms->smsPending = checkForMessages();
 	if(!retSms->smsPending)
-		return 0;
+	{
+		l = 1;
+		return 0;//no messages
+	}
 	if(retSms->smsPending == 0xFF)
 	{
 		retSms->smsPending = 0x00;
 		return 1; //there was an error
 	} 
-	uint8_t l = 1;
 	while(retSms->smsPending && (l <= SIMSIZE))
 	{
 		if(readMessageBreakOut(&sms, l) == 0xFF)
@@ -405,6 +323,7 @@ uint8_t SIM900::getGeo(geoSmsData *retSms)
 		}
 		deleteMessage(l);
 		retSms->smsPending--;
+		l++;
 		retSms->smsCmdNum = sms.smsCmdNum;
 		strcpy(retSms->smsCmdString,sms.smsCmdString);
 		strcpy(retSms->smsNumber,sms.smsNumber);
@@ -421,55 +340,19 @@ uint8_t SIM900::getGeo(geoSmsData *retSms)
 }
 
 
-bool SIM900::sendATCommandBasic(char *buffer, uint8_t arraySize, unsigned long atTimeOut)
-{
-	uint8_t index = 0; 
-	unsigned long timeOut = millis();
-	while ((millis() - timeOut) <= atTimeOut)
-	{
-		if (GSM->available())
-		{
-			buffer[index] = GSM->read();
-			index++;
-			buffer[index] = '\0';
-			if((buffer[index-1] == '\n+') || (index == (arraySize-1)) ) //look for the \n, use this to shorten buffer size
-				index = 0;
-			if(strstr(buffer,ERROR)!=NULL) //if there is an error send AT command again
-				return 1;
-			if((strstr(buffer,OK)!=NULL) || (strstr(buffer,"NORMAL POWER DOWN") != NULL)) //if there is no error then done
-				return 0;
-		}
-	}
-	return 1;
-}
-
 /*************************************************************	
 	Procedure to check if the GSM module is ready to make and
 	receive calls
 	RETURN:
 		0		GSM is ready
-		1		GSM not ready
+		1		Error, buffer is full
+		1		GSM timed out, not ready
 **************************************************************/
-bool SIM900::callReady()
+uint8_t SIM900::callReady()
 {
-	char rxBuffer[25];
-	uint8_t index = 0;
-	unsigned long timeOut = millis();
-	while (millis() - timeOut <= 30000) //changed from 10 seconds
-	{
-		if(GSM->available())
-		{
-			rxBuffer[index] = GSM->read();
-			index++;
-			rxBuffer[index] = '\0';
-		}
-		if(strstr(rxBuffer,CALLREADY) != NULL)
-			return 0;  //GSM is registered on the network
-		if((rxBuffer[index-1] == '\n')||(index == 24))
-			index = 0;
-	}
-	return 1; //GSM is not ready to make/receive calls/sms
+	return(confirmAtCommand("Call Ready",30000));
 }
+
 
 /*************************************************************	
 	Procedure to check the GSM signal quality. The higher the
@@ -477,17 +360,15 @@ bool SIM900::callReady()
 	RETURN:
 		0			Error sending AT command/No signal
 		1 - 99		RSSI signal strength
+		
 **************************************************************/
-uint8_t SIM900::signalQuality(bool wakeUpComm)
+uint8_t SIM900::signalQuality()
 {
-	if(wakeUpComm)
-		gsmSleepMode2();
-	char rxBuffer[50];
-	GSM->println(CSQ);
-	if(sendATCommandBasic(rxBuffer,50,CSQ_TO))
+	GSM->println("AT+CSQ");
+	if(confirmAtCommand("OK",CSQ_TO))
 		return 0;
-	char *ptr = rxBuffer;
-	char *str = NULL;
+	char *ptr = atRxBuffer;
+	char *str = NULL;	
 	ptr = strtok_r(ptr," ",&str);
 	ptr = strtok_r(NULL,",",&str);
 	return(atoi(ptr));
