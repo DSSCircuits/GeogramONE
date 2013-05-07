@@ -18,7 +18,7 @@
 #define SIMSIZE			20
 
 #define AT_TO			200L    	//1000
-#define CMGR_TO			15000L	//15000
+#define CMGR_TO			300L	//15000
 #define CMGD_TO			15000L	//15000
 #define CMGDA_TO		10000L	//10000
 #define CSQ_TO			30000L	//30000

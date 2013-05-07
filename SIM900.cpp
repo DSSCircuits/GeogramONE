@@ -47,7 +47,6 @@ uint8_t SIM900::gsmSleepMode(int mode)
 	return(confirmAtCommand("OK",CSCLK_TO));
 }
 
-
 uint8_t SIM900::confirmAtCommand(char *returnCode, unsigned long atTimeOut)
 {
 	uint8_t index = 0;
@@ -172,18 +171,16 @@ uint8_t SIM900::readMessageBreakOut(simSmsData *sms, int msg)
 	confirmAtCommand("\"",100);
 	atRxBuffer[strlen(atRxBuffer) - 1] = '\0';
 	strcpy(sms->smsNumber,atRxBuffer);
-	confirmAtCommand("\r\n",500);
-	confirmAtCommand(DELIMITER,500);
+	confirmAtCommand("\r\n",100);
+	confirmAtCommand(DELIMITER,100);
 	atRxBuffer[strlen(atRxBuffer) - 1] = '\0';
 	strcpy(sms->smsPwd,atRxBuffer + (strlen(atRxBuffer)-4));
-	confirmAtCommand(DELIMITER,500);
+	confirmAtCommand(DELIMITER,100);
 	atRxBuffer[strlen(atRxBuffer) - 1] = '\0';
 	sms->smsCmdNum = atoi(atRxBuffer);
-	confirmAtCommand(DELIMITER,500);
+	confirmAtCommand(DELIMITER,100);
 	atRxBuffer[strlen(atRxBuffer) - 1] = '\0';
-	if(strlen(atRxBuffer) > 29)
-		atRxBuffer[29] = '\0';
-	strcpy(sms->smsCmdString,atRxBuffer);
+		strcpy(sms->smsCmdString,atRxBuffer);
 	return 0;
 }
 
@@ -333,6 +330,8 @@ uint8_t SIM900::getGeo(geoSmsData *retSms)
 			retSms->smsDataValid = true;
 		else
 			retSms->smsDataValid = false;
+		if(!retSms->smsPending)
+			l = 1;
 		return 0;  //message read
 	}
 	deleteAllMessages(); // too many messages on SIM card

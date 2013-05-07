@@ -30,7 +30,7 @@ volatile uint8_t d10Switch = 0x00;
 uint8_t cmd0 = 0;
 uint8_t cmd1 = 0;
 uint8_t cmd3 = 0;
-uint8_t udp = 0x02; //bit 1 is for UDP setup, bit 0 is for UDP send
+uint8_t udp = 0x00; 
 
 uint8_t fence1 = 0;
 uint8_t fence2 = 0;
@@ -259,13 +259,5 @@ void loop()
 			d10Switch = 0x00;
 		sim900.gsmSleepMode(2);
 	}
-	
-	
-/*	 if(((millis() - miniTimer) >= 5000 )) {
-          sendCoordinates();
-          miniTimer = millis();
-        }*/
-	
-	
 } 
 
