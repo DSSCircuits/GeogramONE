@@ -65,6 +65,23 @@ struct gpsData
 	
 };
 
+struct goCoord
+{
+	char latitude[10];
+	char longitude[11];
+	char ns;
+	char ew;
+	char time[7];
+	char date[7];
+//	char rmcStatus; //use signalLock instead
+	uint16_t speed;
+	uint16_t course;
+	uint8_t satellitesUsed;
+	float altitude;
+	bool signalLock;
+	uint8_t updated;
+};
+
 struct geoFence
 {
 	uint8_t inOut;

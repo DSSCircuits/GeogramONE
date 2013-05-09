@@ -2,8 +2,6 @@
 #include <EEPROM.h>
 #include "SIM900.h"
 #include "PA6C.h"
-//#include "MAX17043.h"
-//#include "BMA250.h"
 
 #ifndef GeogramONE_h
 #define GeogramONE_h
@@ -85,6 +83,16 @@
 #define HTTP1					450
 #define HTTP2					500
 #define HTTP3					550
+#define IMEI					600
+#define GPRS_APN				616
+#define GPRS_USER				666
+#define GPRS_PASS				691
+#define GPRS_HOST				716
+#define GPRS_PORT				732
+#define GPRS_HEADER				734
+#define GPRS_REPLY				745
+
+
 /**********************************/
 
 #define PG_INT             		14
@@ -101,9 +109,6 @@ class GeogramONE
 		void init( );
 		void goToSleep();
 		void configureIO( uint8_t, uint8_t );
-//		void configureMAX17043(uint8_t *);
-//		void configureBMA250(registersBMA250 *);
-//		void configurePA6C();
 		void configureFence(uint8_t , geoFence *);
 		void configureBreachParameters(uint8_t *, uint8_t *);
 		void getFenceActive(uint8_t fenceNumber, uint8_t *fenceVar);

@@ -84,6 +84,7 @@ class SIM900
 		uint8_t signalQuality();
 		uint8_t powerDownGSM();
 		uint8_t getGeo(geoSmsData *);
+		void printEEPROM(uint16_t);
 		void printLatLon(long *, long *);
 		uint8_t confirmAtCommand(char *, unsigned long);
 	private:

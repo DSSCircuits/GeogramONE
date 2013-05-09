@@ -129,49 +129,17 @@ void printList(uint16_t *dataFormat, uint8_t rssi)
 		GSM.print(",");
 	}
 	if(*dataFormat& 0x4000)
-	{
-		char eepChar;
-		for (uint8_t ep = 0; ep < 25; ep++)
-		{
-			eepChar = EEPROM.read(ep + GEOGRAMONEID);
-			if(eepChar == '\0')
-				break;
-			else
-				GSM.print(eepChar);
-		}
-	}
+		sim900.printEEPROM(GEOGRAMONEID);
 }
 
 
 void printHTTP(uint16_t *dFormat, uint8_t rssi)
 {
 	uint16_t dataFormat = *dFormat & 0x7FFF;
-	char eepChar;
-	for (uint8_t ep = 0; ep < 100; ep++)
-	{
-		eepChar = EEPROM.read(ep + HTTP1);
-		if(eepChar == '\0')
-			break;
-		else
-			GSM.print(eepChar);
-	}
+	sim900.printEEPROM(HTTP1);
 	sim900.printLatLon(&lastValid.latitude,&lastValid.longitude);
-	for (uint8_t ep = 0; ep < 100; ep++)
-	{
-		eepChar = EEPROM.read(ep + HTTP2);
-		if(eepChar == '\0')
-			break;
-		else
-			GSM.print(eepChar);
-	}
+	sim900.printEEPROM(HTTP2);
 	printList(&dataFormat, rssi);
-	for (uint8_t ep = 0; ep < 100; ep++)
-	{
-		eepChar = EEPROM.read(ep + HTTP3);
-		if(eepChar == '\0')
-			break;
-		else
-			GSM.print(eepChar);
-	}
+	sim900.printEEPROM(HTTP3);
 	GSM.println();
 }

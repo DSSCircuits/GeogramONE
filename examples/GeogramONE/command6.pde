@@ -22,7 +22,7 @@ void command6()
 			EEPROM.write(eepAdd,(int8_t)atoi(ptr));
 			break;
 	//uint16_t
-		case GEODATAFORMAT1: case GEODATAFORMAT2: case SPEEDLIMIT:
+		case GEODATAFORMAT1: case GEODATAFORMAT2: case SPEEDLIMIT: case GPRS_PORT:
 			ptr = strtok_r(NULL,".",&str);
 			EEPROM_writeAnything(eepAdd,(uint16_t)(atoi(ptr)));
 			break;
@@ -40,46 +40,93 @@ void command6()
 	//string length 4 characters...not including terminating null
 		case PINCODE:
 			ptr = strtok_r(NULL,".",&str);
-			for(uint8_t e = 0; e < 4; e++)
+			writeEEPROM(str,eepAdd,4);
+/*			for(uint8_t e = 0; e < 4; e++)
 			{
 				EEPROM.write(eepAdd + e,ptr[e]);
 			}
-			EEPROM.write(eepAdd + 4,'\0'); 
+			EEPROM.write(eepAdd + 4,'\0'); */
 			break;
 	//string length 38 characters...not including terminating null
 		case SMSADDRESS: case EMAILADDRESS:
 			ptr = strtok_r(NULL,".",&str);
-			for(uint8_t e = 0; e < 38; e++)
+			writeEEPROM(str,eepAdd,38);
+/*			for(uint8_t e = 0; e < 38; e++)
 			{
 				EEPROM.write(eepAdd + e,ptr[e]);
 				if(ptr[e] == NULL)
 					break;
 			}
-			EEPROM.write(eepAdd + 38,'\0'); 
+			EEPROM.write(eepAdd + 38,'\0'); */
 			break;
 	//string length 24 characters...not including terminating null
 		case MOTIONMSG: case BATTERYMSG: case FENCE1MSG: case FENCE2MSG: case FENCE3MSG: case SPEEDMSG: case MAXSPEEDMSG: case GEOGRAMONEID:
 		case D4MSG: case D10MSG:
 		ptr = strtok_r(NULL,".",&str);
-			for(uint8_t e = 0; e < 24; e++)
+		writeEEPROM(str,eepAdd,24);
+/*			for(uint8_t e = 0; e < 24; e++)
 			{
 				EEPROM.write(eepAdd + e,ptr[e]);
 				if(ptr[e] == NULL)
 					break;
 			}
-			EEPROM.write(eepAdd + 24,'\0'); 
+			EEPROM.write(eepAdd + 24,'\0'); */
 			break;
 	//string length 49 characters...not including terminating null
 		case HTTP1: case HTTP2: case HTTP3:
 			ptr = strtok_r(NULL,".",&str);
-			for(uint8_t e = 0; e < 49; e++)
+			writeEEPROM(str,eepAdd,49);
+/*			for(uint8_t e = 0; e < 49; e++)
 			{
 				EEPROM.write(eepAdd + e,ptr[e]);
 				if(ptr[e] == NULL)
 					break;
 			}
-			EEPROM.write(eepAdd + 49,'\0'); 
+			EEPROM.write(eepAdd + 49,'\0'); */
+			break;
+	//string length 15 characters...not including terminating null
+		case IMEI:
+			ptr = strtok_r(NULL,".",&str);
+			writeEEPROM(str,eepAdd,15);
+/*			for(uint8_t e = 0; e < 15; e++)
+			{
+				EEPROM.write(eepAdd + e,ptr[e]);
+				if(ptr[e] == NULL)
+					break;
+			}
+			EEPROM.write(eepAdd + 15,'\0'); */
+			break;
+		//string length 49 characters...not including terminating null
+		case GPRS_APN:
+			ptr = strtok_r(NULL,":",&str);
+			writeEEPROM(str,eepAdd,49);
+			ptr = strtok_r(NULL,":",&str); 
+			writeEEPROM(str,eepAdd,24);
+			ptr = strtok_r(NULL,":",&str); 
+			writeEEPROM(str,eepAdd,24);
+			break;
+		//string length 15 characters...not including terminating null
+		case GPRS_HOST:
+			ptr = strtok_r(NULL,":",&str);
+			writeEEPROM(str,eepAdd,15);
+			break;
+		//string length 10 characters...not including terminating null
+		case GPRS_HEADER: case GPRS_REPLY:
+			ptr = strtok_r(NULL,":",&str);
+			writeEEPROM(str,eepAdd,10);
+			break;
+			
+	}
+}
+
+void writeEEPROM(char *eptr, uint16_t eAddress, uint8_t eSize)
+{
+	for(uint8_t e = 0; e < eSize; e++)
+	{
+		EEPROM.write(eAddress + e,eptr[e]);
+		if(eptr[e] == NULL)
 			break;
 	}
+	EEPROM.write(eAddress + eSize,'\0'); 
 }
       

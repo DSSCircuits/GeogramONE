@@ -250,7 +250,7 @@ uint8_t SIM900::sendMessage(uint8_t smsFormat, char *smsAddress, const char *sms
 		{
 			GSM->println((char)0x1B); //do not send message
 			delay(500);
-			GSM->flush();
+//			GSM->flush();
 			return 1;  //There was an error waiting for the > 
 		} 
 		if(!smsFormat)
@@ -259,7 +259,7 @@ uint8_t SIM900::sendMessage(uint8_t smsFormat, char *smsAddress, const char *sms
 			GSM->println(smsMessage);
 		if(smsFormat == 2)
 		{
-			char eepChar;
+/*			char eepChar;
 			for (uint8_t ep = 0; ep < 50; ep++)
 			{
 				eepChar = EEPROM.read(ep + eepromMsgAddress);
@@ -267,7 +267,8 @@ uint8_t SIM900::sendMessage(uint8_t smsFormat, char *smsAddress, const char *sms
 					break;
 				else
 					GSM->print(eepChar);
-			}
+			}*/
+			printEEPROM(eepromMsgAddress);
 			GSM->println();
 		}
 	}
@@ -284,6 +285,18 @@ uint8_t SIM900::sendMessage(uint8_t smsFormat, char *smsAddress, const char *sms
 	return(confirmAtCommand("OK",CMGS2_TO));
 }
 
+void SIM900::printEEPROM(uint16_t eAddress)
+{
+	char eepChar;
+	for (uint8_t ep = 0; ep < 50; ep++)
+	{
+		eepChar = EEPROM.read(ep + eAddress);
+		if(eepChar == '\0')
+			break;
+		else
+			GSM->print(eepChar);
+	}
+}
 
 uint8_t SIM900::confirmPassword(char *smsPwd, char *pwd)
 {

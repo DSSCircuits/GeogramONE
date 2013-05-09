@@ -20,15 +20,7 @@ void command3() //speed monitoring mode
 	{
 		if(sim900.sendMessage(0,smsData.smsNumber,NULL))
 			return;
-		char eepChar;
-		for (uint8_t ep = 0; ep < 25; ep++)
-		{
-			eepChar = EEPROM.read(ep + SPEEDMSG);
-			if(eepChar == '\0')
-				break;
-			else
-				GSM.print(eepChar);
-		}
+		sim900.printEEPROM(SPEEDMSG);
 		GSM.println();
 		uint16_t speedDataOnly = 0x4818; //Speed, course, battery percent, ID
 		printHTTP(&speedDataOnly, 0);
@@ -48,15 +40,7 @@ void command3() //speed monitoring mode
 	{
 		if(sim900.sendMessage(0,smsData.smsNumber,NULL))
 			return;
-		char eepChar;
-		for (uint8_t ep = 0; ep < 25; ep++)
-		{
-			eepChar = EEPROM.read(ep + MAXSPEEDMSG);
-			if(eepChar == '\0')
-				break;
-			else
-				GSM.print(eepChar);
-		}
+		sim900.printEEPROM(MAXSPEEDMSG);
 		GSM.println(maxSpeed);
 		uint16_t speedDataOnly = 0x4818; //Speed, course, battery percent, ID
 		printHTTP(&speedDataOnly, 0);
