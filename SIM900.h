@@ -79,13 +79,11 @@ class SIM900
 		uint8_t goesWhere(char *);
 		uint8_t confirmPassword(char *, char *);
 		uint8_t deleteAllMessages();
-		uint8_t getCommand(char *);
 		uint8_t gsmSleepMode(int);
 		uint8_t signalQuality();
 		uint8_t powerDownGSM();
 		uint8_t getGeo(geoSmsData *);
 		void printEEPROM(uint16_t);
-		void printLatLon(long *, long *);
 		uint8_t confirmAtCommand(char *, unsigned long);
 	private:
 		void printPROGMEM(int, int atArg = 0xFF);

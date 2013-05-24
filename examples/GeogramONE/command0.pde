@@ -25,92 +25,88 @@ void printList(uint16_t *dataFormat, uint8_t rssi)
 	{
 		if(!(tFormat & 0x02))
 		{
-			GSM.print(lastValid.month,DEC);
+			GSM.print(lastValid.date[2]);
+			GSM.print(lastValid.date[3]);
 			GSM.print("/");
-			GSM.print(lastValid.day,DEC);
+			GSM.print(lastValid.date[0]);
+			GSM.print(lastValid.date[1]);
 			GSM.print("/");
-			GSM.print(lastValid.year,DEC);
+			GSM.print(lastValid.date + 4);
 		}
 		else
 		{
-			GSM.print(lastValid.year,DEC);
+			GSM.print(lastValid.date + 4);
 			GSM.print("/");
-			GSM.print(lastValid.month,DEC);
+			GSM.print(lastValid.date[2]);
+			GSM.print(lastValid.date[3]);
 			GSM.print("/");
-			GSM.print(lastValid.day,DEC);
+			GSM.print(lastValid.date[0]);
+			GSM.print(lastValid.date[1]);
 		}
 		GSM.print(",");
 	}
 	if(*dataFormat & 0x0002)
 	{
-		GSM.print(lastValid.hour,DEC);
+		GSM.print(lastValid.time[0]);
+		GSM.print(lastValid.time[1]);
 		GSM.print(":");
-		GSM.print(lastValid.minute,DEC);
+		GSM.print(lastValid.time[2]);
+		GSM.print(lastValid.time[3]);
 		GSM.print(":");
-		GSM.print(lastValid.seconds,DEC);
-		if(!(tFormat & 0x01))
-			GSM.print(lastValid.amPM);
+		GSM.print(lastValid.time + 4);
 		GSM.print(",");
 	}
 	if(*dataFormat & 0x0004)
 	{
-		sim900.printLatLon(&lastValid.latitude,&lastValid.longitude);
+		printLatLon(&lastValid);
 		GSM.print(",");
 	}
 	if(*dataFormat & 0x0008)
 	{
-		#if USESPEEDKNOTS
-		GSM.print(lastValid.speedKnots,DEC);
-		#endif
+		GSM.print(lastValid.speed,DEC);
 		GSM.print(",");
 	}
 	if(*dataFormat & 0x0010)
 	{
-		#if USECOURSE
 		GSM.print(lastValid.courseDirection);
-		#endif
 		GSM.print(",");
 	}
 	if(*dataFormat & 0x0020)
 	{
-		#if USEALTITUDE
 		GSM.print(lastValid.altitude,2);
-		#endif
 		GSM.print(",");
 	}
 	if(*dataFormat & 0x0040)
 	{
-		#if USEHDOP
-		GSM.print(lastValid.hdop,DEC);
-		#endif
+	//	#if USEHDOP
+	//	GSM.print(lastValid.hdop,DEC);
+	//	#endif
 		GSM.print(",");
 	}
 	if(*dataFormat & 0x0080)
 	{
-		#if USEVDOP
-		GSM.print(lastValid.vdop,DEC);
-		#endif
+	//	#if USEVDOP
+	//	GSM.print(lastValid.vdop,DEC);
+	//	#endif
 		GSM.print(",");
 	}
 	if(*dataFormat & 0x0100)
 	{
-		#if USEPDOP
-		GSM.print(lastValid.pdop,DEC);
-		#endif
+	//	#if USEPDOP
+	//	GSM.print(lastValid.pdop,DEC);
+	//	#endif
 		GSM.print(",");
 	}
 	if(*dataFormat & 0x0200)
 	{
-		#if USESATELLITESUSED
 		GSM.print(lastValid.satellitesUsed,DEC);
-		#endif
 		GSM.print(",");
 	}
 	if(*dataFormat & 0x0400)
 	{
-		#if USEMODE2
-		GSM.print(lastValid.mode2,DEC);
-		#endif
+	//	#if USEMODE2
+	//	GSM.print(lastValid.mode2,DEC);
+	//	#endif
 		GSM.print(",");
 	}
 	if(*dataFormat & 0x0800)
@@ -137,9 +133,27 @@ void printHTTP(uint16_t *dFormat, uint8_t rssi)
 {
 	uint16_t dataFormat = *dFormat & 0x7FFF;
 	sim900.printEEPROM(HTTP1);
-	sim900.printLatLon(&lastValid.latitude,&lastValid.longitude);
+	printLatLon(&lastValid);
 	sim900.printEEPROM(HTTP2);
 	printList(&dataFormat, rssi);
 	sim900.printEEPROM(HTTP3);
 	GSM.println();
+}
+
+void printLatLon(goCoord *position)
+{
+	if(position->ns == 'S')
+		GSM.print("-");
+	GSM.print(position->latitude[0]);
+	GSM.print(position->latitude[1]);
+	GSM.print("+");
+	GSM.print(position->latitude + 2);
+	GSM.print(",");
+	if(position->ew == 'W')
+		GSM.print("-");
+	GSM.print(position->longitude[0]);
+	GSM.print(position->longitude[1]);
+	GSM.print(position->longitude[2]);
+	GSM.print("+");
+	GSM.print(position->longitude + 3);
 }

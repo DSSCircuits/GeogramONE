@@ -28,7 +28,7 @@ void command6()
 			break;
 	//unsigned long 
 		case APN: case RADIUS1: case RADIUS2: case RADIUS3: case SENDINTERVAL: case SLEEPTIMEON:
-		case SLEEPTIMEOFF:
+		case SLEEPTIMEOFF: case GPRSSENDINTERVAL:
 			ptr = strtok_r(NULL,".",&str);
 			EEPROM_writeAnything(eepAdd,(unsigned long)(atol(ptr)));
 			break;
@@ -62,7 +62,7 @@ void command6()
 	//string length 24 characters...not including terminating null
 		case MOTIONMSG: case BATTERYMSG: case FENCE1MSG: case FENCE2MSG: case FENCE3MSG: case SPEEDMSG: case MAXSPEEDMSG: case GEOGRAMONEID:
 		case D4MSG: case D10MSG:
-		ptr = strtok_r(NULL,".",&str);
+		ptr = strtok_r(NULL,"..",&str); //changed to double period
 		writeEEPROM(str,eepAdd,24);
 /*			for(uint8_t e = 0; e < 24; e++)
 			{
@@ -74,7 +74,7 @@ void command6()
 			break;
 	//string length 49 characters...not including terminating null
 		case HTTP1: case HTTP2: case HTTP3:
-			ptr = strtok_r(NULL,".",&str);
+			ptr = strtok_r(NULL,"..",&str); //changed to double period
 			writeEEPROM(str,eepAdd,49);
 /*			for(uint8_t e = 0; e < 49; e++)
 			{
@@ -102,17 +102,17 @@ void command6()
 			writeEEPROM(str,eepAdd,49);
 			ptr = strtok_r(NULL,":",&str); 
 			writeEEPROM(str,eepAdd,24);
-			ptr = strtok_r(NULL,":",&str); 
+			ptr = strtok_r(NULL,"..",&str); //changed to double period
 			writeEEPROM(str,eepAdd,24);
 			break;
 		//string length 15 characters...not including terminating null
 		case GPRS_HOST:
-			ptr = strtok_r(NULL,":",&str);
+			ptr = strtok_r(NULL,"..",&str); //changed to double period from a colon
 			writeEEPROM(str,eepAdd,15);
 			break;
 		//string length 10 characters...not including terminating null
-		case GPRS_HEADER: case GPRS_REPLY:
-			ptr = strtok_r(NULL,":",&str);
+		case GPRS_HEADER: case GPRS_REPLY: 
+			ptr = strtok_r(NULL,"..",&str); //changed to double period from colon
 			writeEEPROM(str,eepAdd,10);
 			break;
 			

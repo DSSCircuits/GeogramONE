@@ -21,49 +21,6 @@
 #define PMTK161				"$PMTK161,0*28"
 #define PMTK000				"$PMTK000*32"
 				
-struct gpsData
-{
-/***GPGGA Variables**********/	
-	uint8_t positionFixInd;
-	uint8_t satellitesUsed;
-	float altitude;
-	
-/***GPGSA Variables**********/		
-	char mode1;
-	uint8_t mode2;
-	uint16_t pdop;
-	uint16_t hdop;
-	uint16_t vdop;
-
-/***GPRMC Variables**********/	
-	uint8_t seconds;
-	uint8_t minute;
-	int8_t hour;
-	char rmcStatus;
-	long latitude;
-	long longitude;
-	uint16_t speed;
-	uint16_t course;
-	uint16_t year;
-	uint8_t month;
-	uint8_t day;
-	char amPM;
-	char courseDirection[3];
-	/*GPS Trace Orange*/
-	float orangeLat;
-	float orangeLon;
-	long orangeAltitude;
-	long orangeDate;
-	long orangeTime;
-	int orangeCourse;
-	long orangeSpeed;
-	char orangeNS;
-	char orangeEW;
-	bool signalLock;
-	
-/*****************************/
-	
-};
 
 struct goCoord
 {
@@ -73,11 +30,16 @@ struct goCoord
 	char ew;
 	char time[7];
 	char date[7];
-//	char rmcStatus; //use signalLock instead
-	uint16_t speed;
+	uint8_t positionFixInd;
+	uint8_t mode2;
+	uint16_t pdop;
+	uint16_t hdop;
+	uint16_t vdop;
+	uint32_t speed;
 	uint16_t course;
-	uint8_t satellitesUsed;
-	float altitude;
+	char courseDirection[3];
+	int satellitesUsed;
+	long altitude;
 	bool signalLock;
 	uint8_t updated;
 };
@@ -95,19 +57,18 @@ class PA6C
 {
 	public:
 		PA6C(HardwareSerial *ser);
-		uint8_t getCoordinates(gpsData *);
+		uint8_t getCoordinates(goCoord *);
 		uint8_t init(unsigned long);
 		uint8_t sleepGPS();
 		uint8_t wakeUpGPS();
-		void customConfig(int8_t, bool, uint8_t, bool);
-		uint8_t geoFenceDistance(gpsData *, geoFence *);
+		uint8_t geoFenceDistance(goCoord *, geoFence *);
 	private:
-		bool amPMFormat;
-		int8_t timeZoneUTC;
-		uint8_t speedType;
-		bool impMetric;
-		void filterData(char *, gpsData *, uint8_t *, uint8_t *);
-		void directionOfTravel(gpsData *);
+//		bool amPMFormat;
+//		int8_t timeZoneUTC;
+//		uint8_t speedType;
+//		bool impMetric;
+		void filterData(char *, goCoord *, uint8_t *, uint8_t *);
+		void directionOfTravel(goCoord *);
 		HardwareSerial *gpsSerial;
 };
 

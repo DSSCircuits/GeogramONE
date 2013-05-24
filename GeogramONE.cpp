@@ -108,12 +108,13 @@ void GeogramONE::getFenceActive(uint8_t fenceNumber, uint8_t *fenceVar)
 	return ;
 }
 
-void GeogramONE::configureInterval(uint32_t *timeInterval, uint32_t *sleepTimeOn, uint32_t *sleepTimeOff, uint8_t *sleepTimeConfig)
+void GeogramONE::configureInterval(uint32_t *smsInterval, uint32_t *sleepTimeOn, uint32_t *sleepTimeOff, uint8_t *sleepTimeConfig, uint32_t *gprsInterval)
 {
-	EEPROM_readAnything(SENDINTERVAL,*timeInterval);
+	EEPROM_readAnything(SENDINTERVAL,*smsInterval);
 	EEPROM_readAnything(SLEEPTIMEON,*sleepTimeOn);
 	EEPROM_readAnything(SLEEPTIMEOFF,*sleepTimeOff);
 	EEPROM_readAnything(SLEEPTIMECONFIG,*sleepTimeConfig);
+	EEPROM_readAnything(GPRSSENDINTERVAL,*gprsInterval);
 	return;
 }
 

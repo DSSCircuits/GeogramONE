@@ -70,6 +70,7 @@
 #define BMA0X26					177
 #define BMA0X27					178
 #define BMA0X28					179
+#define GPRSSENDINTERVAL		180
 #define MOTIONMSG				200
 #define BATTERYMSG				225
 #define FENCE1MSG				250
@@ -112,7 +113,7 @@ class GeogramONE
 		void configureFence(uint8_t , geoFence *);
 		void configureBreachParameters(uint8_t *, uint8_t *);
 		void getFenceActive(uint8_t fenceNumber, uint8_t *fenceVar);
-		void configureInterval(uint32_t *, uint32_t *, uint32_t *, uint8_t *);
+		void configureInterval(uint32_t *, uint32_t *, uint32_t *, uint8_t *, uint32_t *);
 		void configureSpeed(uint8_t *, uint8_t *, uint16_t *);
 	private:
 };

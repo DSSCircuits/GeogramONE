@@ -178,9 +178,11 @@ uint8_t SIM900::readMessageBreakOut(simSmsData *sms, int msg)
 	confirmAtCommand(DELIMITER,100);
 	atRxBuffer[strlen(atRxBuffer) - 1] = '\0';
 	sms->smsCmdNum = atoi(atRxBuffer);
-	confirmAtCommand(DELIMITER,100);
-	atRxBuffer[strlen(atRxBuffer) - 1] = '\0';
-		strcpy(sms->smsCmdString,atRxBuffer);
+	
+	confirmAtCommand("\r\n",100);
+//	confirmAtCommand(DELIMITER,100);
+//	atRxBuffer[strlen(atRxBuffer) - 1] = '\0';
+	strcpy(sms->smsCmdString,atRxBuffer);
 	return 0;
 }
 
@@ -237,7 +239,7 @@ uint8_t SIM900::sendMessage(uint8_t smsFormat, char *smsAddress, const char *sms
 {
 	unsigned long timeOut = 0;
 	boolean ns = false;
-	if(smsFormat < 3)  //might want to put a sleepmode0 in here
+	if(smsFormat < 3)
 	{
 		if(!signalQuality())
 			return 4;
@@ -250,7 +252,6 @@ uint8_t SIM900::sendMessage(uint8_t smsFormat, char *smsAddress, const char *sms
 		{
 			GSM->println((char)0x1B); //do not send message
 			delay(500);
-//			GSM->flush();
 			return 1;  //There was an error waiting for the > 
 		} 
 		if(!smsFormat)
@@ -362,7 +363,7 @@ uint8_t SIM900::getGeo(geoSmsData *retSms)
 **************************************************************/
 uint8_t SIM900::callReady()
 {
-	return(confirmAtCommand("Call Ready",30000));
+	return(confirmAtCommand("l Ready",30000));
 }
 
 
@@ -384,19 +385,4 @@ uint8_t SIM900::signalQuality()
 	ptr = strtok_r(ptr," ",&str);
 	ptr = strtok_r(NULL,",",&str);
 	return(atoi(ptr));
-}
-
-void SIM900::printLatLon(long *lat, long *lon)
-{
-		if(*lat < 0)
-			GSM->print("-");
-        GSM->print(abs(*lat/1000000));
-        GSM->print("+");
-        GSM->print(abs((*lat%1000000)/10000.0),4);
-        GSM->print(",");
-		if(*lon < 0)
-			GSM->print("-");
-        GSM->print(abs(*lon/1000000));
-        GSM->print("+");
-        GSM->print(abs((*lon%1000000)/10000.0),4);
 }

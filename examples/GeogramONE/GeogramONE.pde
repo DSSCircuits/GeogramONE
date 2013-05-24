@@ -11,12 +11,13 @@ under CC-SA v3 license.
 #include <I2C.h>
 #include "eepromAnything.h"
 
+
 GeogramONE ggo;
 AltSoftSerial GSM;
 SIM900 sim900(&GSM);
 geoSmsData smsData;
 PA6C gps(&Serial); 
-gpsData lastValid;
+goCoord lastValid;
 geoFence fence;
 
 
@@ -39,7 +40,8 @@ uint8_t fence3 = 0;
 uint8_t breachSpeed = 0;
 uint8_t breachReps = 0;
 
-uint32_t timeInterval = 0;
+uint32_t smsInterval = 0;
+uint32_t gprsInterval = 0;
 uint32_t sleepTimeOn = 0;
 uint32_t sleepTimeOff = 0;
 uint8_t sleepTimeConfig = 0;
@@ -47,21 +49,15 @@ uint8_t sleepTimeConfig = 0;
 uint8_t speedHyst = 0;
 uint16_t speedLimit = 0;
 
-unsigned long miniTimer = 0;
+char gprsReply[11];
 
 void setup()
 {
-
-
-
 	ggo.init();
 	gps.init(115200);
 	sim900.init(9600);
-
-	
 	MAX17043init(7, 500);
 	BMA250init(3, 500);
-	gps.customConfig(-4,true,1,false);
 	attachInterrupt(0, ringIndicator, FALLING);
 	attachInterrupt(1, movement, FALLING);
 	PCintPort::attachInterrupt(PG_INT, &charger, CHANGE);
@@ -76,7 +72,7 @@ void setup()
 	ggo.getFenceActive(3, &fence3);
 	ggo.configureSpeed(&cmd3, &speedHyst, &speedLimit);
 	ggo.configureBreachParameters(&breachSpeed, &breachReps);
-	ggo.configureInterval(&timeInterval, &sleepTimeOn, &sleepTimeOff, &sleepTimeConfig);
+	ggo.configureInterval(&smsInterval, &sleepTimeOn, &sleepTimeOff, &sleepTimeConfig, &gprsInterval);
 	if(sleepTimeConfig & 0x02)
 		BMA250enableInterrupts();
 	uint8_t swInt = EEPROM.read(IOSTATE0);
@@ -89,13 +85,10 @@ void setup()
 		PCintPort::attachInterrupt(10, &d10Interrupt, RISING);
 	if(swInt == 0x06)
 		PCintPort::attachInterrupt(10, &d10Interrupt, FALLING);
-		
-
 }
 
 void loop()
 {
-
 	gps.getCoordinates(&lastValid);
 	if(call)
 	{
@@ -122,8 +115,8 @@ void loop()
 					command6();
 				else if(smsData.smsCmdNum == 7)
 					command7();
-				else if(smsData.smsCmdNum == 9)
-					udp |= 0x01;
+				else if(smsData.smsCmdNum == 8)
+					command8();
 			}
 		}
 		sim900.gsmSleepMode(2);	
@@ -151,20 +144,20 @@ void loop()
 	if(fence1)
 	{
 		static uint8_t breach1Conf = 0;
-		static uint8_t previousSeconds1 = lastValid.seconds;
+		static char previousSeconds1 = lastValid.time[5];
 		if((fence1 == 1) && (lastValid.speed >= breachSpeed))
 		{
 			ggo.configureFence(1,&fence); 
 			if(!gps.geoFenceDistance(&lastValid, &fence))
 			{
-				if(lastValid.seconds != previousSeconds1)
+				if(lastValid.time[5] != previousSeconds1)
 					breach1Conf++;
 				if(breach1Conf > breachReps)
 				{
 					fence1 = 2;
 					breach1Conf = 0;
 				}
-				previousSeconds1 = lastValid.seconds;
+				previousSeconds1 = lastValid.time[5];
 			}
 			else
 				breach1Conf = 0;
@@ -182,20 +175,20 @@ void loop()
 	if(fence2)
 	{
 		static uint8_t breach2Conf = 0;
-		static uint8_t previousSeconds2 = lastValid.seconds;
+		static char previousSeconds2 = lastValid.time[5];
 		if((fence2 == 1) && (lastValid.speed >= breachSpeed))
 		{  
 			ggo.configureFence(2,&fence);
 			if(!gps.geoFenceDistance(&lastValid, &fence))
 			{
-				if(lastValid.seconds != previousSeconds2)
+				if(lastValid.time[5] != previousSeconds2)
 					breach2Conf++;
 				if(breach2Conf > breachReps)
 				{
 					fence2 = 2;
 					breach2Conf = 0;
 				}
-				previousSeconds2 = lastValid.seconds;
+				previousSeconds2 = lastValid.time[5];
 			}
 			else
 				breach2Conf = 0;
@@ -213,20 +206,20 @@ void loop()
 	if(fence3)
 	{
 		static uint8_t breach3Conf = 0;
-		static uint8_t previousSeconds3 = lastValid.seconds;
+		static char previousSeconds3 = lastValid.time[5];
 		if((fence3 == 1) && (lastValid.speed >= breachSpeed))
 		{  
 			ggo.configureFence(3,&fence);
 			if(!gps.geoFenceDistance(&lastValid, &fence))
 			{
-				if(lastValid.seconds != previousSeconds3)
+				if(lastValid.time[5] != previousSeconds3)
 					breach3Conf++;
 				if(breach3Conf > breachReps)
 				{
 					fence3 = 2;
 					breach3Conf = 0;
 				}
-				previousSeconds3 = lastValid.seconds;
+				previousSeconds3 = lastValid.time[5];
 			}
 			else
 				breach3Conf = 0;
@@ -241,8 +234,10 @@ void loop()
 			sim900.gsmSleepMode(2);
 		}
 	}
-	if(timeInterval)
-		timerMenu();
+	if(smsInterval)
+		smsTimerMenu();
+	if(gprsInterval)
+		gprsTimerMenu();
 	if(sleepTimeOn && sleepTimeOff)
 		sleepTimer();
 	if(d4Switch)
