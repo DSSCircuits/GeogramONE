@@ -13,64 +13,63 @@
 #endif
 
 /*******EEPROM ADDRESSES**********/
-
-
-
-
-#define TIMEZONE				88   //use -4 for EST
-#define TIMEFORMAT				89   // bit 0: 0 - am/pm,  1 - 24 hour format  bit 1: 0 - mm/dd/yy , 1 - yy/mm/dd
-#define ENGMETRIC				90   // 0 - English (mph, ft, etc...), 1 = Metric (kph, m, etc...)
-#define GEODATAFORMAT1			91
-#define GEODATAFORMAT2			93
-#define BATTERYLOWLEVEL    		95
-#define SENDINTERVAL			96
-#define IOSTATE0				100
-#define IOSTATE1				101
-#define IOSTATE2				102
-#define IOSTATE3				103
-#define IOSTATE4				104
-#define IOSTATE5				105
-#define IOSTATE6				106
-#define IOSTATE7				107
-#define IOSTATE8				108
-#define IOSTATE9				109
-#define SLEEPTIMECONFIG			110
-#define SLEEPTIMEON				111
-#define SLEEPTIMEOFF			115
-#define SPEEDLIMIT				119
-#define SPEEDHYST				121
-#define ACTIVE1					122
-#define INOUT1					123
-#define RADIUS1					124
-#define LATITUDE1				128
-#define LONGITUDE1				132
-#define ACTIVE2					136
-#define INOUT2					137
-#define RADIUS2					138
-#define LATITUDE2				142
-#define LONGITUDE2				146
-#define ACTIVE3					150
-#define INOUT3					151
-#define RADIUS3					152
-#define LATITUDE3				156
-#define LONGITUDE3				160
-#define BREACHSPEED				164
-#define BREACHREPS				165
-#define BMA0X0F					166
-#define BMA0X10					167
-#define BMA0X11					168
-#define BMA0X16					169
-#define BMA0X17					170
-#define BMA0X19					171
-#define BMA0X1A					172
-#define BMA0X1B					173
-#define BMA0X20					174
-#define BMA0X21					175
-#define BMA0X25					176
-#define BMA0X26					177
-#define BMA0X27					178
-#define BMA0X28					179
-#define GPRSSENDINTERVAL		180
+#define PINCODE         		0
+#define SMSADDRESS				5
+#define RETURNADDCONFIG			44
+#define TIMEZONE				45   //use -4 for EST
+#define DATEFORMAT				46   // 0 - mm/dd/yy , 1 - yy/mm/dd
+#define ENGMETRIC				47   // 0 - English (mph, ft, etc...), 1 = Metric (kph, m, etc...)
+#define GEODATAFORMAT1			48
+#define GEODATAFORMAT2			50
+#define BATTERYLOWLEVEL    		52
+#define SMSSENDINTERVAL			53
+#define IOSTATE0				57
+#define IOSTATE1				58
+#define IOSTATE2				59
+#define IOSTATE3				60
+#define IOSTATE4				61
+#define IOSTATE5				62
+#define IOSTATE6				63
+#define IOSTATE7				64
+#define IOSTATE8				65
+#define IOSTATE9				66
+#define SLEEPTIMECONFIG			68
+#define SLEEPTIMEON				69
+#define SLEEPTIMEOFF			73
+#define SPEEDLIMIT				77
+#define SPEEDHYST				79
+#define ACTIVE1					80
+#define INOUT1					81
+#define RADIUS1					82
+#define LATITUDE1				86
+#define LONGITUDE1				90
+#define ACTIVE2					94
+#define INOUT2					95
+#define RADIUS2					96
+#define LATITUDE2				100
+#define LONGITUDE2				104
+#define ACTIVE3					108
+#define INOUT3					109
+#define RADIUS3					110
+#define LATITUDE3				114
+#define LONGITUDE3				118
+#define BREACHSPEED				122
+#define BREACHREPS				123
+#define BMA0X0F					124
+#define BMA0X10					125
+#define BMA0X11					126
+#define BMA0X16					127
+#define BMA0X17					128
+#define BMA0X19					129
+#define BMA0X1A					130
+#define BMA0X1B					131
+#define BMA0X20					132
+#define BMA0X21					133
+#define BMA0X25					134
+#define BMA0X26					135
+#define BMA0X27					136
+#define BMA0X28					137
+#define UDPSENDINTERVAL			138
 #define MOTIONMSG				200
 #define BATTERYMSG				225
 #define FENCE1MSG				250
@@ -90,14 +89,14 @@
 #define GPRS_PASS				691
 #define GPRS_HOST				716
 #define GPRS_PORT				732
-#define GPRS_HEADER				734
-#define GPRS_REPLY				745
+#define UDP_HEADER				734
+#define UDP_REPLY				745
 
 
 /**********************************/
 
 #define PG_INT             		14
-#define BMA_ADD    (uint8_t)0x18
+#define BMA_ADD    	   (uint8_t)0x18
 #define FUELGAUGE          		0x36 //Fuel gauge I2C address
 #define FUELGAUGEALERT     		0x11 //set to 15% battery capacity
 #define FUELGAUGEPIN       		0x07 //Fuel gauge interrupt pin

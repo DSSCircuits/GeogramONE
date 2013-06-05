@@ -69,12 +69,6 @@ void GeogramONE::configureIO(uint8_t pinNumber, uint8_t eepromAddress)
 	if(ioConfig == 3){pinMode(pinNumber,OUTPUT);digitalWrite(pinNumber,HIGH);}
 	if(ioConfig == 4){analogReference(DEFAULT);analogRead(pinNumber - 14);}
 }
-/*
-void GeogramONE::configureMAX17043(uint8_t *battery)
-{  
-	EEPROM_readAnything(BATTERYLOWLEVEL,*battery);
-}*/
-
 
 void GeogramONE::configureFence(uint8_t fenceNumber, geoFence *fence)
 {
@@ -110,11 +104,11 @@ void GeogramONE::getFenceActive(uint8_t fenceNumber, uint8_t *fenceVar)
 
 void GeogramONE::configureInterval(uint32_t *smsInterval, uint32_t *sleepTimeOn, uint32_t *sleepTimeOff, uint8_t *sleepTimeConfig, uint32_t *gprsInterval)
 {
-	EEPROM_readAnything(SENDINTERVAL,*smsInterval);
+	EEPROM_readAnything(SMSSENDINTERVAL,*smsInterval);
 	EEPROM_readAnything(SLEEPTIMEON,*sleepTimeOn);
 	EEPROM_readAnything(SLEEPTIMEOFF,*sleepTimeOff);
 	EEPROM_readAnything(SLEEPTIMECONFIG,*sleepTimeConfig);
-	EEPROM_readAnything(GPRSSENDINTERVAL,*gprsInterval);
+	EEPROM_readAnything(UDPSENDINTERVAL,*gprsInterval);
 	return;
 }
 

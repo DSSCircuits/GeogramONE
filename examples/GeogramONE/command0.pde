@@ -1,29 +1,32 @@
-
 void command0()  //send coordinates
 {
 	sim900.gsmSleepMode(0);
 	uint16_t geoDataFormat;
 	uint8_t rssi = sim900.signalQuality();
-	uint8_t tFormat = EEPROM.read(TIMEFORMAT);
 	EEPROM_readAnything(GEODATAFORMAT2,geoDataFormat);
-	if(sim900.sendMessage(0,smsData.smsNumber,NULL))
-		return;
-	if(!(geoDataFormat & 0x8000))
-		printHTTP(&geoDataFormat, rssi);
-	EEPROM_readAnything(GEODATAFORMAT1,geoDataFormat);
-	printList(&geoDataFormat, rssi);
-	GSM.println();
-	if(!sim900.sendMessage(3,NULL,NULL))
-		cmd0 = 0;
+	if(rssi)
+	{
+		goesWhere(smsData.smsNumber);
+		if(!sim900.prepareSMS(smsData.smsNumber))
+		{	
+			if(!(geoDataFormat & 0x8000))
+				printHTTP(&geoDataFormat, rssi);
+		}
+		EEPROM_readAnything(GEODATAFORMAT1,geoDataFormat);
+		printList(&geoDataFormat, rssi);
+		GSM.println();
+		if(!sim900.sendSMS())
+			cmd0 = 0;
+	}
 	sim900.gsmSleepMode(2);
 }
 
 void printList(uint16_t *dataFormat, uint8_t rssi)
 {
-	uint8_t tFormat = EEPROM.read(TIMEFORMAT);
+	uint8_t tFormat = EEPROM.read(DATEFORMAT);
 	if(*dataFormat & 0x0001)
 	{
-		if(!(tFormat & 0x02))
+		if(!tFormat)
 		{
 			GSM.print(lastValid.date[2]);
 			GSM.print(lastValid.date[3]);
@@ -73,28 +76,22 @@ void printList(uint16_t *dataFormat, uint8_t rssi)
 	}
 	if(*dataFormat & 0x0020)
 	{
-		GSM.print(lastValid.altitude,2);
+		GSM.print(lastValid.altitude,DEC);
 		GSM.print(",");
 	}
 	if(*dataFormat & 0x0040)
 	{
-	//	#if USEHDOP
-	//	GSM.print(lastValid.hdop,DEC);
-	//	#endif
+		GSM.print(lastValid.hdop,DEC);
 		GSM.print(",");
 	}
 	if(*dataFormat & 0x0080)
 	{
-	//	#if USEVDOP
-	//	GSM.print(lastValid.vdop,DEC);
-	//	#endif
+		GSM.print(lastValid.vdop,DEC);
 		GSM.print(",");
 	}
 	if(*dataFormat & 0x0100)
 	{
-	//	#if USEPDOP
-	//	GSM.print(lastValid.pdop,DEC);
-	//	#endif
+		GSM.print(lastValid.pdop,DEC);
 		GSM.print(",");
 	}
 	if(*dataFormat & 0x0200)
@@ -104,9 +101,7 @@ void printList(uint16_t *dataFormat, uint8_t rssi)
 	}
 	if(*dataFormat & 0x0400)
 	{
-	//	#if USEMODE2
-	//	GSM.print(lastValid.mode2,DEC);
-	//	#endif
+		GSM.print(lastValid.mode2,DEC);
 		GSM.print(",");
 	}
 	if(*dataFormat & 0x0800)
@@ -125,18 +120,18 @@ void printList(uint16_t *dataFormat, uint8_t rssi)
 		GSM.print(",");
 	}
 	if(*dataFormat& 0x4000)
-		sim900.printEEPROM(GEOGRAMONEID);
+		printEEPROM(GEOGRAMONEID);
 }
 
 
 void printHTTP(uint16_t *dFormat, uint8_t rssi)
 {
 	uint16_t dataFormat = *dFormat & 0x7FFF;
-	sim900.printEEPROM(HTTP1);
+	printEEPROM(HTTP1);
 	printLatLon(&lastValid);
-	sim900.printEEPROM(HTTP2);
+	printEEPROM(HTTP2);
 	printList(&dataFormat, rssi);
-	sim900.printEEPROM(HTTP3);
+	printEEPROM(HTTP3);
 	GSM.println();
 }
 

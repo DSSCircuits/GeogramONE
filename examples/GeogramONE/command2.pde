@@ -18,6 +18,7 @@ void command2()
 		case 3 :
 		{
 			uint8_t offset = 0;
+			unsigned long cmdLong;
 			if(cmd == 2)
 			{
 				offset = 14;
@@ -35,7 +36,7 @@ void command2()
 			cmd = atoi(ptr) & 0x01; // inside fence 0 or outside fence 1
 			EEPROM.write(INOUT1 + offset,cmd);
 			ptr = strtok_r(NULL,".",&str);
-			unsigned long cmdLong = atol(ptr); // fence radius
+			cmdLong = atol(ptr); // fence radius
 			EEPROM_writeAnything(RADIUS1 + offset, cmdLong);
 			EEPROM_writeAnything(LATITUDE1 + offset, lastValid.latitude);
 			EEPROM_writeAnything(LONGITUDE1 + offset, lastValid.longitude);

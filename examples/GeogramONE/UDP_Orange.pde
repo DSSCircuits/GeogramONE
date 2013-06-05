@@ -1,17 +1,72 @@
 void udpOrange()
 {
+	static bool sendOK = false;
 	if(!lastValid.signalLock)
 		return;
-	if(gprsInterval > 5)
-		sim900.gsmSleepMode(0);
-	GSM.println("AT+CGATT?");
-	if(sim900.confirmAtCommand(": 1",3000))
+	if(!(lastValid.updated & 0x01))
 		return;
+	if(udpInterval > 5)
+		sim900.gsmSleepMode(0);
+	if(!sendOK)	
+	{
+		for(uint8_t g = 0; g < 11; g++)
+		{
+			udpReply[g] = EEPROM.read(UDP_REPLY + g);
+		}
+		GSM.println("AT+CGATT?");
+		if(sim900.confirmAtCommand(": 1",3000))
+			return;
+		uint8_t cStatus = sim900.cipStatus();
+		switch(cStatus)
+		{
+			case 0:
+				GSM.print("AT+CSTT=\"");
+				printEEPROM(GPRS_APN);
+				GSM.println("\"");
+				if(sim900.confirmAtCommand("OK",3000))
+					return;
+			case 1:
+				GSM.println("AT+CIICR");
+				if(sim900.confirmAtCommand("OK",5000))
+					return;
+			case 2:
+			//	return; //might need to put return back in
+			case 3:
+				GSM.println("AT+CIFSR");
+				if(sim900.confirmAtCommand(".",2000) == 1)
+					return;
+				sim900.confirmAtCommand("\r\n",100);
+			case 4:
+			{
+				GSM.print("AT+CIPSTART=\"UDP\",\"");
+				printEEPROM(GPRS_HOST);
+				GSM.print("\",\"");
+				uint16_t portNumber = 0;
+				EEPROM_readAnything(GPRS_PORT,portNumber);
+				GSM.print(portNumber,DEC);
+				GSM.println("\"");
+				if(sim900.confirmAtCommand("T OK",2000))
+					return;
+			}
+			case 5:
+				break; //might need to change to return because of transition between 5 and 6
+			case 6:
+				break;
+			case 7:
+			case 8:
+			case 9:
+				GSM.println("AT+CIPSHUT");
+				sim900.confirmAtCommand("OK",3000);
+				return;
+			default:
+				return;
+		}
+	}
 	GSM.println("AT+CIPSEND");
 	if(!sim900.confirmAtCommand(">",3000))
 	{
-		sim900.printEEPROM(IMEI);
-		sim900.printEEPROM(GPRS_HEADER);
+		printEEPROM(IMEI);
+		printEEPROM(UDP_HEADER);
 		GSM.print(lastValid.date);
 	//	GSM.print("NA");
 		GSM.print(";");
@@ -26,7 +81,177 @@ void udpOrange()
 		GSM.print(";");
 		GSM.print(lastValid.ew);
 		GSM.print(";");
-		GSM.print(lastValid.speed * KNOTSTOKPH);
+		GSM.print(lastValid.speed);
+		GSM.print(";");
+		GSM.print(lastValid.course);
+		GSM.print(";");
+		GSM.print(lastValid.altitude);
+		GSM.print(";");
+	//	GSM.println(lastValid.satellitesUsed);
+		GSM.println("NA");
+		GSM.println(0x1A,BYTE);
+		if(sim900.confirmAtCommand("OK\r\n",3000))
+		{
+			sendOK = false;
+			return;
+		}
+		sendOK = true;
+		if(!sim900.confirmAtCommand(udpReply,UDPREPLY_TO))
+		{
+			udp = 0;
+			lastValid.updated &= ~(0x01);
+			sendOK = true;
+			if(udpInterval > 5)
+				sim900.gsmSleepMode(2);
+			return;
+		}
+	}
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*SECOND ATTEMPT TAKES TOO LONG*/
+/*
+void udpOrange()
+{
+	if(!lastValid.signalLock)
+		return;
+	if(udpInterval > 5)
+		sim900.gsmSleepMode(0);
+	GSM.println("AT+CGATT?");
+	if(sim900.confirmAtCommand(": 1",3000))
+		return;
+	uint8_t cStatus = sim900.cipStatus();
+	switch(cStatus)
+	{
+		case 0:
+			GSM.print("AT+CSTT=\"");
+			printEEPROM(GPRS_APN);
+			GSM.println("\"");
+			if(sim900.confirmAtCommand("OK",3000))
+				return;
+		case 1:
+			GSM.println("AT+CIICR");
+			if(sim900.confirmAtCommand("OK",5000))
+				return;
+		case 2:
+		//	return; //might need to put return back in
+		case 3:
+			GSM.println("AT+CIFSR");
+			if(sim900.confirmAtCommand(".",2000) == 1)
+				return;
+			sim900.confirmAtCommand("\r\n",100);
+		case 4:
+		{
+			GSM.print("AT+CIPSTART=\"UDP\",\"");
+			printEEPROM(GPRS_HOST);
+			GSM.print("\",\"");
+			uint16_t portNumber = 0;
+			EEPROM_readAnything(GPRS_PORT,portNumber);
+			GSM.print(portNumber,DEC);
+			GSM.println("\"");
+			if(sim900.confirmAtCommand("T OK",2000))
+				return;
+		}
+		case 5:
+			return;
+		case 6:
+			break;
+		case 7:
+		case 8:
+		case 9:
+			GSM.println("AT+CIPSHUT");
+			sim900.confirmAtCommand("OK",3000);
+			return;
+		default:
+			return;
+	}
+	for(uint8_t g = 0; g < 11; g++)
+	{
+		udpReply[g] = EEPROM.read(UDP_REPLY + g);
+	}	
+	GSM.println("AT+CIPSEND");
+	if(!sim900.confirmAtCommand(">",3000))
+	{
+		printEEPROM(IMEI);
+		printEEPROM(UDP_HEADER);
+		GSM.print(lastValid.date);
+	//	GSM.print("NA");
+		GSM.print(";");
+		GSM.print(lastValid.time);
+	//	GSM.print("NA");
+		GSM.print(";");
+		GSM.print(lastValid.latitude);
+		GSM.print(";");
+		GSM.print(lastValid.ns);
+		GSM.print(";");
+		GSM.print(lastValid.longitude);
+		GSM.print(";");
+		GSM.print(lastValid.ew);
+		GSM.print(";");
+		GSM.print(lastValid.speed);
+		GSM.print(";");
+		GSM.print(lastValid.course);
+		GSM.print(";");
+		GSM.print(lastValid.altitude);
+		GSM.print(";");
+	//	GSM.println(lastValid.satellitesUsed);
+		GSM.println("NA");
+		GSM.println(0x1A,BYTE);
+		sim900.confirmAtCommand("OK\r\n",3000);
+		if(!sim900.confirmAtCommand(udpReply,UDPREPLY_TO))
+		{
+			udp = 0;
+			if(udpInterval > 5)
+				sim900.gsmSleepMode(2);
+			return;
+		}
+	}
+}
+*/
+
+
+/*ORIGINAL*/
+/*
+void udpOrange()
+{
+	if(!lastValid.signalLock)
+		return;
+	if(gprsInterval > 5)
+		sim900.gsmSleepMode(0);
+	GSM.println("AT+CGATT?");
+	if(sim900.confirmAtCommand(": 1",3000))
+		return;
+	GSM.println("AT+CIPSEND");
+	if(!sim900.confirmAtCommand(">",3000))
+	{
+		printEEPROM(IMEI);
+		printEEPROM(UDP_HEADER);
+		GSM.print(lastValid.date);
+	//	GSM.print("NA");
+		GSM.print(";");
+		GSM.print(lastValid.time);
+	//	GSM.print("NA");
+		GSM.print(";");
+		GSM.print(lastValid.latitude);
+		GSM.print(";");
+		GSM.print(lastValid.ns);
+		GSM.print(";");
+		GSM.print(lastValid.longitude);
+		GSM.print(";");
+		GSM.print(lastValid.ew);
+		GSM.print(";");
+		GSM.print(lastValid.speed);
 		GSM.print(";");
 		GSM.print(lastValid.course);
 		GSM.print(";");
@@ -36,7 +261,7 @@ void udpOrange()
 		GSM.println("NA");
 		GSM.println(0x1A,BYTE);
 		sim900.confirmAtCommand("\r\n",3000);
-		if(!sim900.confirmAtCommand(gprsReply,3000))
+		if(!sim900.confirmAtCommand(gprsReply,UDPREPLY_TO))
 		{
 			udp = 0;
 			if(gprsInterval > 5)
@@ -50,7 +275,7 @@ void udpOrange()
 		GSM.println("AT+CIPSHUT");
 		sim900.confirmAtCommand("OK",3000);
 		GSM.print("AT+CSTT=\"");
-		sim900.printEEPROM(GPRS_APN);
+		printEEPROM(GPRS_APN);
 		GSM.println("\"");
 		sim900.confirmAtCommand("OK",3000);
 		GSM.println("AT+CIICR");
@@ -63,10 +288,10 @@ void udpOrange()
 	udp = 1;
 	for(uint8_t g = 0; g < 11; g++)
 	{
-		gprsReply[g] = EEPROM.read(GPRS_REPLY + g);
+		gprsReply[g] = EEPROM.read(UDP_REPLY + g);
 	}
 	GSM.print("AT+CIPSTART=\"UDP\",\"");
-	sim900.printEEPROM(GPRS_HOST);
+	printEEPROM(GPRS_HOST);
 	GSM.print("\",\"");
 	uint16_t portNumber = 0;
 	EEPROM_readAnything(GPRS_PORT,portNumber);
@@ -75,4 +300,4 @@ void udpOrange()
 	sim900.confirmAtCommand("T OK",2000);
 	sim900.gsmSleepMode(2);
 }
-
+*/

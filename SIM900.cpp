@@ -1,26 +1,5 @@
 #include "SIM900.h"
 
-
-template <class T> int EEPROM_writeAnything(int ee, const T& value)
-{
-    const byte* p = (const byte*)(const void*)&value;
-    unsigned int i;
-    for (i = 0; i < sizeof(value); i++)
-        EEPROM.write(ee++, *p++);
-    return i;
-}
-
-template <class T> int EEPROM_readAnything(int ee, T& value)
-{
-    byte* p = (byte*)(void*)&value;
-    unsigned int i;
-    for (i = 0; i < sizeof(value); i++)
-		*p++ = EEPROM.read(ee++);
-    return i;
-}
-
-//const char* DELIMITER = ".";
-
 SIM900::SIM900(AltSoftSerial *ser)
 {
 	GSM = ser;
@@ -33,11 +12,25 @@ uint8_t SIM900::init(unsigned long baudRate)
 	pinMode(GSMSWITCH,OUTPUT);
 	digitalWrite(GSMSWITCH,LOW);
 	GSM->begin(baudRate);
-	totalMsg = 0;
+//	totalMsg = 0;
 	initializeGSM();
 	gsmSleepMode(2);
 }
 
+/*************************************************************	
+Procedure to put GSM module into sleep mode.  Two sleep modes
+are available. Mode 0 - GSM taken out of sleep mode.  Mode 2 - 
+GSM enters sleep mode if UART is idle for 5 or more seconds
+
+ARGUMENTS
+	mode			0 or 2
+	
+RETURN:
+	0				command successful
+	1				ERROR executing command
+	2				Buffer full, potential problem
+	3				Timeout reached, potential problem
+**************************************************************/
 uint8_t SIM900::gsmSleepMode(int mode)
 {
 	GSM->println("AT\r\nAT");
@@ -47,18 +40,34 @@ uint8_t SIM900::gsmSleepMode(int mode)
 	return(confirmAtCommand("OK",CSCLK_TO));
 }
 
-uint8_t SIM900::confirmAtCommand(char *returnCode, unsigned long atTimeOut)
+
+/*************************************************************	
+Procedure to search data returned from AT commands.  All 
+data up to and including searchString is stored in a global
+array to be used if needed.
+
+ARGUMENTS
+	searchString	pointer to string to be searched
+	timeOut			timeout in milliseconds
+	
+RETURN:
+	0				searchString found successfully
+	1				ERROR string encountered, potential problem
+	2				Buffer full, searchString not found
+	3				Timeout reached before searchString found
+**************************************************************/
+uint8_t SIM900::confirmAtCommand(char *searchString, unsigned long timeOut)
 {
 	uint8_t index = 0;
-	unsigned long timeOut = millis();
-	while((millis() - timeOut) <= atTimeOut)
+	unsigned long tOut = millis();
+	while((millis() - tOut) <= timeOut)
 	{
 		if (GSM->available())
 		{
 			atRxBuffer[index] = GSM->read();
 			index++;
 			atRxBuffer[index] = '\0';
-			if(strstr(atRxBuffer,returnCode) != NULL)
+			if(strstr(atRxBuffer,searchString) != NULL)
 				return 0;
 			if(strstr(atRxBuffer,"ERROR") != NULL)
 				return 1;
@@ -70,11 +79,12 @@ uint8_t SIM900::confirmAtCommand(char *returnCode, unsigned long atTimeOut)
 }
 
 /*************************************************************	
-	Procedure to power on the GSM module.  It will first check 
-	if the module is already turned on.
-	RETURN:
-		0		GSM turned on successfully or was already on
-		1		GSM module did not turn on
+Procedure to power on the GSM module.  It will first check 
+if the module is already turned on.
+RETURN:
+	0		GSM turned on successfully or was already on
+	1		GSM module did not turn on
+	2		GSM was already powered on
 **************************************************************/
 uint8_t SIM900::powerOnGSM(){
 	if(digitalRead(GSMSTATUS))
@@ -93,11 +103,11 @@ uint8_t SIM900::powerOnGSM(){
 
 
 /*************************************************************	
-	Procedure to power off the GSM module.  Power off is
-	done through software commands, not through hardware
-	RETURN:
-		0		GSM turned off successfully
-		1		GSM module did not turn off
+Procedure to power off the GSM module.  Power off is
+done through software commands, not through hardware
+RETURN:
+	0		GSM turned off successfully
+	1		GSM module did not turn off
 **************************************************************/
 uint8_t SIM900::powerDownGSM()
 {
@@ -123,16 +133,27 @@ void SIM900::initializeGSM()
 	confirmAtCommand("OK",CNMI_TO);
 }
 
-
+/*************************************************************	
+Procedure to check if GSM is registered to the network. 
+RETURN:
+	0		GSM is registered to the network
+	1		GSM is not registered to the network
+**************************************************************/
 uint8_t SIM900::checkNetworkRegistration()
 {
 	GSM->println("AT+CREG?");
 	confirmAtCommand("OK",CREG_TO);
-	if(strstr(atRxBuffer,",1") != NULL || strstr(atRxBuffer,",5") != NULL)
-		return 0; //GSM is registered on the network
-	return 1; //GSM is not registered on the network
+	if((strstr(atRxBuffer,",1") != NULL) || (strstr(atRxBuffer,",5") != NULL))
+		return 0;
+	return 1;
 }
 
+/*************************************************************	
+Procedure to check for messages on the SIM card 
+RETURN:
+	x		x = number of messages on the SIM card
+	0xFF	No messages on the SIM card
+**************************************************************/
 uint8_t SIM900::checkForMessages()
 {
 	GSM->println("AT+CPMS?");
@@ -145,6 +166,18 @@ uint8_t SIM900::checkForMessages()
 	return (atoi(ptr));  //Number of messages on the sim card
 }
 
+
+/*************************************************************	
+Procedure to delete message from SIM card.
+ARGUMENT:
+	msg				message number to delete
+ 
+RETURN:
+	0				command successful
+	1				ERROR executing command
+	2				Buffer full, potential problem
+	3				Timeout reached, potential problem
+**************************************************************/
 uint8_t SIM900::deleteMessage(int msg)
 {
 	GSM->print("AT+CMGD=");
@@ -152,129 +185,61 @@ uint8_t SIM900::deleteMessage(int msg)
 	return(confirmAtCommand("OK",CMGD_TO));
 }
 
+/*************************************************************	
+Procedure to delete all messages from SIM card.
+ 
+RETURN:
+	0				command successful
+	1				ERROR executing command
+	2				Buffer full, potential problem
+	3				Timeout reached, potential problem
+**************************************************************/
 uint8_t SIM900::deleteAllMessages()
 {
-	GSM->println("CMGDA=\"DEL ALL\"");
+	GSM->println("AT+CMGDA=\"DEL ALL\"");
 	return(confirmAtCommand(OK,CMGD_TO));
 }
 
-uint8_t SIM900::readMessageBreakOut(simSmsData *sms, int msg)
+/*************************************************************	
+Procedure to prepare SMS. Sending and SMS can be broken down 
+into 3 parts.  Prepare the SMS header, print data and send data.
+
+ARGUMENT:
+	smsAddress		pointer to SMS address
+ 
+RETURN:
+	0				command successful
+	1				ERROR executing command, SMS aborted
+**************************************************************/
+bool SIM900::prepareSMS(char *smsAddress)
 {
-	GSM->print("AT+CMGR=");
-	GSM->println(msg);
-	if(confirmAtCommand("D\",\"",CMGR_TO))
-	{
-		if(strlen(atRxBuffer) <= 20)
-			return 0xFF;
-		return 1;
-	}
-	confirmAtCommand("\"",100);
-	atRxBuffer[strlen(atRxBuffer) - 1] = '\0';
-	strcpy(sms->smsNumber,atRxBuffer);
-	confirmAtCommand("\r\n",100);
-	confirmAtCommand(DELIMITER,100);
-	atRxBuffer[strlen(atRxBuffer) - 1] = '\0';
-	strcpy(sms->smsPwd,atRxBuffer + (strlen(atRxBuffer)-4));
-	confirmAtCommand(DELIMITER,100);
-	atRxBuffer[strlen(atRxBuffer) - 1] = '\0';
-	sms->smsCmdNum = atoi(atRxBuffer);
-	
-	confirmAtCommand("\r\n",100);
-//	confirmAtCommand(DELIMITER,100);
-//	atRxBuffer[strlen(atRxBuffer) - 1] = '\0';
-	strcpy(sms->smsCmdString,atRxBuffer);
-	return 0;
+	GSM->print("AT+CMGS=\"");
+	GSM->print(smsAddress);
+	GSM->println("\"");
+	if(!confirmAtCommand(">",CMGS1_TO))
+		return 0;
+	GSM->println((char)0x1B); //do not send message
+	delay(500);
+	return 1;  //There was an error waiting for the > 
 }
-
-uint8_t SIM900::goesWhere(char *smsAddress)
-{
-	uint8_t replyOrStored = 0;
-	EEPROM_readAnything(RETURNADDCONFIG,replyOrStored);
-	for(uint8_t l = 0; l < 39; l++)
-	{
-		if((replyOrStored == 1) || (replyOrStored == 3))
-			smsAddress[l] = EEPROM.read(l + SMSADDRESS);
-		else if(replyOrStored == 2)
-			smsAddress[l] = EEPROM.read(l + EMAILADDRESS);
-		if(smsAddress[l] == '\0')
-			break;
-	}
-}
-
-
 
 /*************************************************************	
-	Procedure to send an SMS message.  Three options are 
-	available to send the message.  Option 1 sends the 
-	header information only, option 2 sends the complete
-	message using the message passed as an argument. 
-    The third option only sends the footer.
-	
-	ARGUMENTS:
-		uint8_t smsFormat	
-				0	send header only
-				1	send header, passed message and footer
-				2	send header, message at eeprom address and footer
-				3	send footer only
-				
-				
-		char *smsAddress	
-				phone number or email address
-				
-		const char *smsMessage
-				message to be sent
-				
-		uint16_t eepromMsgAddress
-				address of eeprom message
-				
-	
-	RETURN:
-		0		SMS portion successfully issued
-		1		Time out waiting for > , message not sent
-		2		Error sending SMS
-		3		Time out waiting for acknowledge of sent SMS
-		4		No GSM signal
-**************************************************************/
-uint8_t SIM900::sendMessage(uint8_t smsFormat, char *smsAddress, const char *smsMessage, uint16_t eepromMsgAddress)
+Send the SMS. Sending and SMS can be broken down 
+into 3 parts.  Prepare the SMS header, print data and send data.
+
+ARGUMENT:
+	smsAddress		pointer to SMS address
+ 
+RETURN:
+	0				SMS successfully sent
+	1				ERROR executing command
+	2				Buffer full, potential problem
+	3				Timeout reached, potential problem
+**************************************************************/	
+uint8_t SIM900::sendSMS()
 {
-	unsigned long timeOut = 0;
-	boolean ns = false;
-	if(smsFormat < 3)
-	{
-		if(!signalQuality())
-			return 4;
-		GSM->print("AT+CMGS=\"");
-		GSM->print(smsAddress);
-		GSM->println("\"");	
-		if(!confirmAtCommand(">",CMGS1_TO))
-			ns = true;
-		if(!ns)
-		{
-			GSM->println((char)0x1B); //do not send message
-			delay(500);
-			return 1;  //There was an error waiting for the > 
-		} 
-		if(!smsFormat)
-			return 0; //Header information successfully sent
-		if(smsFormat == 1)
-			GSM->println(smsMessage);
-		if(smsFormat == 2)
-		{
-/*			char eepChar;
-			for (uint8_t ep = 0; ep < 50; ep++)
-			{
-				eepChar = EEPROM.read(ep + eepromMsgAddress);
-				if(eepChar == '\0')
-					break;
-				else
-					GSM->print(eepChar);
-			}*/
-			printEEPROM(eepromMsgAddress);
-			GSM->println();
-		}
-	}
-    GSM->println((char)0x1A);
-    timeOut = millis();
+	GSM->println((char)0x1A);
+    unsigned long timeOut = millis();
 	while ((millis() - timeOut) <= CMGS2_TO)
 	{
 		if (GSM->available())
@@ -286,34 +251,27 @@ uint8_t SIM900::sendMessage(uint8_t smsFormat, char *smsAddress, const char *sms
 	return(confirmAtCommand("OK",CMGS2_TO));
 }
 
-void SIM900::printEEPROM(uint16_t eAddress)
+
+
+
+uint8_t SIM900::readMessageBreakOut(int msg)
 {
-	char eepChar;
-	for (uint8_t ep = 0; ep < 50; ep++)
+	GSM->print("AT+CMGR=");
+	GSM->println(msg);
+	if(confirmAtCommand("D\",\"",CMGR_TO))
 	{
-		eepChar = EEPROM.read(ep + eAddress);
-		if(eepChar == '\0')
-			break;
-		else
-			GSM->print(eepChar);
+		if(strlen(atRxBuffer) <= 20)
+			return 0xFF;
+		return 1;
 	}
+	return 0;
 }
 
-uint8_t SIM900::confirmPassword(char *smsPwd, char *pwd)
-{
-	if(strncmp(smsPwd,pwd,4) == 0) //debug serial print
-		return 0; //valid security code
-	return 1;
-}
-
-uint8_t SIM900::getGeo(geoSmsData *retSms)
+uint8_t SIM900::getGeo(geoSmsData *retSms, char *pwd)
 {
 	static uint8_t l = 1;
-	simSmsData sms;
 	retSms->smsDataValid = false;
 	retSms->smsCmdNum = 0xFF;
-	if(!signalQuality())
-		return 3;
 	retSms->smsPending = checkForMessages();
 	if(!retSms->smsPending)
 	{
@@ -327,23 +285,31 @@ uint8_t SIM900::getGeo(geoSmsData *retSms)
 	} 
 	while(retSms->smsPending && (l <= SIMSIZE))
 	{
-		if(readMessageBreakOut(&sms, l) == 0xFF)
+		if(readMessageBreakOut(l) == 0xFF)
 		{
 			l++;
 			continue;
 		}
+		confirmAtCommand("\"",100);
+		atRxBuffer[strlen(atRxBuffer) - 1] = '\0';
+		strcpy(retSms->smsNumber,atRxBuffer);
+		confirmAtCommand("\r\n",100);
+		confirmAtCommand(DELIMITER,100);
+		atRxBuffer[strlen(atRxBuffer) - 1] = '\0';
+		if(strncmp((atRxBuffer + (strlen(atRxBuffer)-4)),pwd,4) != 0) 
+			retSms->smsNumber[0] = '\0';
+		else
+		{
+			retSms->smsDataValid = true;
+			confirmAtCommand(DELIMITER,100);
+			atRxBuffer[strlen(atRxBuffer) - 1] = '\0';
+			retSms->smsCmdNum = atoi(atRxBuffer);
+			confirmAtCommand("\r\n",100);
+			strcpy(retSms->smsCmdString,atRxBuffer);
+		}
 		deleteMessage(l);
 		retSms->smsPending--;
 		l++;
-		retSms->smsCmdNum = sms.smsCmdNum;
-		strcpy(retSms->smsCmdString,sms.smsCmdString);
-		strcpy(retSms->smsNumber,sms.smsNumber);
-		char pwd[5];
-		EEPROM_readAnything(PINCODE,pwd);
-		if(!confirmPassword(sms.smsPwd,pwd))
-			retSms->smsDataValid = true;
-		else
-			retSms->smsDataValid = false;
 		if(!retSms->smsPending)
 			l = 1;
 		return 0;  //message read
@@ -351,6 +317,8 @@ uint8_t SIM900::getGeo(geoSmsData *retSms)
 	deleteAllMessages(); // too many messages on SIM card
 	return 2;
 }
+
+	
 
 
 /*************************************************************	
@@ -385,4 +353,34 @@ uint8_t SIM900::signalQuality()
 	ptr = strtok_r(ptr," ",&str);
 	ptr = strtok_r(NULL,",",&str);
 	return(atoi(ptr));
+}
+
+
+uint8_t SIM900::cipStatus()
+{
+	GSM->println("AT+CIPSTATUS");
+	if(confirmAtCommand("TE:",1000))
+		return 0xFF; //problem with command
+	confirmAtCommand("\n",500);
+	if(strstr(atRxBuffer,"IP I") != NULL)
+		return 0;
+	if(strstr(atRxBuffer,"ART") != NULL)
+		return 1;
+	if(strstr(atRxBuffer,"IP C") != NULL)
+		return 2;
+	if(strstr(atRxBuffer,"IP G") != NULL)
+		return 3;
+	if(strstr(atRxBuffer,"TUS") != NULL)
+		return 4;
+	if(strstr(atRxBuffer,"G/S") != NULL)
+		return 5;
+	if(strstr(atRxBuffer,"T OK") != NULL)
+		return 6;	
+	if(strstr(atRxBuffer,"SIN") != NULL)
+		return 7;	
+	if(strstr(atRxBuffer,"SED") != NULL)
+		return 8;		
+	if(strstr(atRxBuffer,"PDP") != NULL)
+		return 9;
+	return 0xFF;
 }

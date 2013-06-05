@@ -8,9 +8,8 @@
 #endif
 
 #define GPSTIMEOUT			1100
-#define KNOTSTOMPH			1.15078
-#define KNOTSTOKPH			1.852
 #define METERSTOFEET		3.2808
+#define KPHTOMPH			0.621371
 
 #define GPGGA				"GA"
 #define GPGSA				"SA"
@@ -20,6 +19,19 @@
 
 #define PMTK161				"$PMTK161,0*28"
 #define PMTK000				"$PMTK000*32"
+
+#define JANUARY				1
+#define FEBRUARY			2
+#define MARCH				3
+#define APRIL				4
+#define MAY					5
+#define JUNE				6
+#define JULY				7
+#define AUGUST				8
+#define SEPTEMBER			9
+#define OCTOBER				10
+#define NOVEMBER			11
+#define DECEMBER			12
 				
 
 struct goCoord
@@ -61,12 +73,9 @@ class PA6C
 		uint8_t init(unsigned long);
 		uint8_t sleepGPS();
 		uint8_t wakeUpGPS();
-		uint8_t geoFenceDistance(goCoord *, geoFence *);
+		uint8_t geoFenceDistance(goCoord *, geoFence *, bool);
+		void updateRegionalSettings(int8_t, bool, goCoord *);
 	private:
-//		bool amPMFormat;
-//		int8_t timeZoneUTC;
-//		uint8_t speedType;
-//		bool impMetric;
 		void filterData(char *, goCoord *, uint8_t *, uint8_t *);
 		void directionOfTravel(goCoord *);
 		HardwareSerial *gpsSerial;

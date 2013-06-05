@@ -59,8 +59,11 @@ void command7()  //toggle IO pins
 		default :
 			return;
 	}
-	sim900.sendMessage(0,smsData.smsNumber,NULL);
-	GSM.print("IO Channel ");GSM.print(ioChannel,DEC);
-	GSM.print(" = ");GSM.println(ioData,DEC);
-	sim900.sendMessage(3,NULL,NULL);
+	goesWhere(smsData.smsNumber);
+	if(!sim900.prepareSMS(smsData.smsNumber))
+	{
+		GSM.print("IO Channel ");GSM.print(ioChannel,DEC);
+		GSM.print(" = ");GSM.println(ioData,DEC);
+	}
+	sim900.sendSMS();
 }

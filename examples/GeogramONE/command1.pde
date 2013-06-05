@@ -15,8 +15,13 @@ void command1() //motion sensing mode
 			cmd1 = 0x02;
 			break;
 		case 0x02 :
-			if(!sim900.sendMessage(2,smsData.smsNumber,NULL,MOTIONMSG))
-				cmd1 = 0;
+			goesWhere(smsData.smsNumber);
+			if(!sim900.prepareSMS(smsData.smsNumber))
+			{
+				printEEPROM(MOTIONMSG);
+				if(!sim900.sendSMS())
+					cmd1 = 0;
+			}
 			break;
 	}
 }

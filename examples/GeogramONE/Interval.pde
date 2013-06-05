@@ -8,12 +8,12 @@ uint8_t smsTimerMenu()
 	}
 }
 
-uint8_t gprsTimerMenu()
+uint8_t udpTimerMenu()
 {
-	static unsigned long gprsTimer = millis();
-	if((millis() - gprsTimer) >= (gprsInterval*1000))
+	static unsigned long udpTimer = millis();
+	if((millis() - udpTimer) >= (udpInterval*1000))
 	{
 		udp |= 0x01;
-		gprsTimer = millis();
+		udpTimer = millis();
 	}
 }

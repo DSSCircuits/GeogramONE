@@ -18,13 +18,14 @@ void command3() //speed monitoring mode
 		cmd3 = 0x03;
 	if(cmd3 == 3)
 	{
-		if(sim900.sendMessage(0,smsData.smsNumber,NULL))
+		goesWhere(smsData.smsNumber);
+		if(sim900.prepareSMS(smsData.smsNumber))
 			return;
-		sim900.printEEPROM(SPEEDMSG);
+		printEEPROM(SPEEDMSG);
 		GSM.println();
 		uint16_t speedDataOnly = 0x4818; //Speed, course, battery percent, ID
 		printHTTP(&speedDataOnly, 0);
-		if(sim900.sendMessage(3,NULL,NULL))
+		if(sim900.sendSMS())
 			return;
 		maxSpeed = lastValid.speed;
 		cmd3 = 0x04;
@@ -38,13 +39,14 @@ void command3() //speed monitoring mode
 	}
 	if(cmd3 == 5)
 	{
-		if(sim900.sendMessage(0,smsData.smsNumber,NULL))
+		goesWhere(smsData.smsNumber);
+		if(sim900.prepareSMS(smsData.smsNumber))
 			return;
-		sim900.printEEPROM(MAXSPEEDMSG);
+		printEEPROM(MAXSPEEDMSG);
 		GSM.println(maxSpeed);
 		uint16_t speedDataOnly = 0x4818; //Speed, course, battery percent, ID
 		printHTTP(&speedDataOnly, 0);
-		if(sim900.sendMessage(3,NULL,NULL))
+		if(sim900.sendSMS())
 			return;
 		cmd3 = 0x02; 
 		maxSpeed = 0;
