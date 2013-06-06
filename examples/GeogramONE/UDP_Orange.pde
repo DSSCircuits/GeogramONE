@@ -89,7 +89,7 @@ void udpOrange()
 		GSM.print(";");
 	//	GSM.println(lastValid.satellitesUsed);
 		GSM.println("NA");
-		GSM.println(0x1A,BYTE);
+		GSM.println((char)0x1A);
 		if(sim900.confirmAtCommand("OK\r\n",3000))
 		{
 			sendOK = false;
