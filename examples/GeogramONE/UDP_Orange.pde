@@ -106,4 +106,9 @@ void udpOrange()
 			return;
 		}
 	}
+	else
+	{
+		sendOK = false;
+		return;
+	}
 }
