@@ -16,6 +16,8 @@ void udpOrange()
 		GSM.println("AT+CGATT?");
 		if(!sim900.confirmAtCommand(": 0",3000))
 		{
+			if(!sim900.signalQuality())
+				return;
 			GSM.println("AT+CGATT=1");
 			if(sim900.confirmAtCommand("OK",10000))
 				return;
