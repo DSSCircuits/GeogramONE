@@ -14,8 +14,12 @@ void udpOrange()
 			udpReply[g] = EEPROM.read(UDP_REPLY + g);
 		}
 		GSM.println("AT+CGATT?");
-		if(sim900.confirmAtCommand(": 1",3000))
-			return;
+		if(!sim900.confirmAtCommand(": 0",3000))
+		{
+			GSM.println("AT+CGATT=1");
+			if(sim900.confirmAtCommand("OK",10000))
+				return;
+		}
 		uint8_t cStatus = sim900.cipStatus();
 		switch(cStatus)
 		{
