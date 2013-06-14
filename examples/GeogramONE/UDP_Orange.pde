@@ -16,11 +16,23 @@ void udpOrange()
 		GSM.println("AT+CGATT?");
 		if(!sim900.confirmAtCommand(": 0",3000))
 		{
+			sim900.confirmAtCommand("OK",500);
 			if(!sim900.signalQuality())
 				return;
-			GSM.println("AT+CGATT=1");
-			if(sim900.confirmAtCommand("OK",10000))
-				return;
+			if(!sim900.checkNetworkRegistration())
+			{
+				GSM.println("AT+CGATT=1");	
+				if(sim900.confirmAtCommand("OK",10000) == 1) //if ERROR, need to reboot GSM module
+				{
+					static unsigned long resetGSM = millis();
+					if((millis() - resetGSM) >= 300000) //if more than 5 minutes reboot GSM module
+					{
+						sim900.powerDownGSM();
+						sim900.init(9600);
+						resetGSM = millis();
+					}
+				}
+			}
 		}
 		uint8_t cStatus = sim900.cipStatus();
 		switch(cStatus)
