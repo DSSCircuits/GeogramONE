@@ -33,6 +33,8 @@ void udpOrange()
 					}
 				}
 			}
+			else
+				return;
 		}
 		uint8_t cStatus = sim900.cipStatus();
 		switch(cStatus)
