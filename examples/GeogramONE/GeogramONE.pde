@@ -147,6 +147,13 @@ void loop()
 						command7();
 					else if(smsData.smsCmdNum == 8)
 						command8();
+					else if(smsData.smsCmdNum == 255)
+					{
+						sim900.gsmSleepMode(0);
+						sim900.powerDownGSM();
+						delay(2000);
+						sim900.init(9600);
+					}
 				}
 			}
 		}

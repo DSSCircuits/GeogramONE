@@ -28,6 +28,7 @@ void udpOrange()
 					if((millis() - resetGSM) >= 300000) //if more than 5 minutes reboot GSM module
 					{
 						sim900.powerDownGSM();
+						delay(2000);
 						sim900.init(9600);
 						resetGSM = millis();
 					}
