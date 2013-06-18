@@ -11,11 +11,11 @@ under CC-SA v3 license.
 #include <I2C.h>
 #include "eepromAnything.h"
 
-#define USEFENCE1	1  //set to zero to free up code space if option is not needed
-#define USEFENCE2	1  //set to zero to free up code space if option is not needed
-#define USEFENCE3	1  //set to zero to free up code space if option is not needed
-#define USESPEED	1  //set to zero to free up code space if option is not needed
-#define USEMOTION	1  //set to zero to free up code space if option is not needed
+#define USEFENCE1	0  //set to zero to free up code space if option is not needed
+#define USEFENCE2	0  //set to zero to free up code space if option is not needed
+#define USEFENCE3	0  //set to zero to free up code space if option is not needed
+#define USESPEED	0  //set to zero to free up code space if option is not needed
+#define USEMOTION	0  //set to zero to free up code space if option is not needed
 
 GeogramONE ggo;
 AltSoftSerial GSM;
@@ -62,8 +62,11 @@ uint16_t speedLimit = 0;
 
 char udpReply[11];
 
-void goesWhere(char *, uint8_t replyOrStored = 0);
 
+unsigned long miniTimer = millis();
+
+void goesWhere(char *, uint8_t replyOrStored = 0);
+  
 void setup()
 {
 	ggo.init();
@@ -106,16 +109,75 @@ void setup()
 		PCintPort::attachInterrupt(10, &d10Interrupt, RISING);
 	if(swInt == 0x06)
 		PCintPort::attachInterrupt(10, &d10Interrupt, FALLING);
+     
+    miniTimer = millis();
+
 }
+
+
+boolean SendHTTPCords( goCoord * lastValid ) {
+  
+  
+  if( millis() - miniTimer < 1000*10 ) {
+    // We are trying to poll sooner then 10 secs 
+    return  true ; // Nothing to do. 
+  }
+  
+  if( lastValid == NULL ) {
+    return false; // Nothing to send. 
+  }
+  
+  if( ! lastValid->signalLock ) {
+    return false; // Not connected.
+  }
+  /*
+  if( sim900.signalQuality() == 0 ) {
+    return true ;// No signal to cell towers 
+  }
+  */
+  
+  // Try and send the message three times. 
+  uint8_t attempts = 3 ;   
+  while( attempts > 0 ) {
+    attempts--; 
+    
+    // Connect to the Internet
+    if( ! sim900.SetupHTTP() ) {
+      continue; // Try again. 
+    }
+    
+    // Send current GPS info to webserver. 
+    if( ! sim900.PingHTTP(lastValid ) ) {
+      continue; // Try again 
+    }    
+    // Everything worked. 
+    
+    // Reset the timer 
+    miniTimer = millis() ; 
+    
+    // Everything is good. 
+    return true  ; 
+  }
+  
+  // Something went wrong. 
+  return false;   
+}
+
 
 void loop()
 {
-	if(!gps.getCoordinates(&lastValid))
-	{
-		int8_t tZ = EEPROM.read(TIMEZONE);
-		bool eM = EEPROM.read(ENGMETRIC);
-		gps.updateRegionalSettings(tZ, eM, &lastValid);
-	}
+  // Update the GPS coordinates if possiable
+  if(!gps.getCoordinates(&lastValid))
+  {
+    int8_t tZ = EEPROM.read(TIMEZONE);
+    bool eM   = EEPROM.read(ENGMETRIC);
+    gps.updateRegionalSettings(tZ, eM, &lastValid);
+  }
+
+  // Check and update the webserver with the GPS cords.       
+  SendHTTPCords( &lastValid );
+       
+
 	if(call)
 	{
 		sim900.gsmSleepMode(0);

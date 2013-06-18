@@ -384,3 +384,152 @@ uint8_t SIM900::cipStatus()
 		return 9;
 	return 0xFF;
 }
+
+
+
+bool SIM900::IsReadOK(unsigned long timeout_millis) {
+  GSM->flush();
+  char rxBuffer[6];
+  for (int i = 0; i < 5; ++i)
+    rxBuffer[i] = '\0';
+  uint8_t idx;
+  unsigned long start_time = millis();
+  while (millis() - start_time < timeout_millis) {
+    if (GSM->available() != 0) {
+      rxBuffer[idx] = GSM->read();
+      if (rxBuffer[(idx + 4) % 5] == 'O' &&
+          rxBuffer[idx] == 'K') {
+        return true;
+      }
+      if (rxBuffer[(idx + 1) % 5] == 'E' &&
+          rxBuffer[(idx + 2) % 5] == 'R' &&
+          rxBuffer[(idx + 3) % 5] == 'R' &&
+          rxBuffer[(idx + 4) % 5] == 'O' &&
+          rxBuffer[idx] == 'R') {
+        return false;
+      }
+      idx = (idx + 1) % 5;
+    }
+  }
+  return false;  // timeout exceeded
+}
+
+bool SIM900::SetupHTTP() {
+  GSM->flush();
+
+  GSM->println("AT+CSQ");
+  if (!IsReadOK(/*timeout=*/5000))
+    return false;  
+  
+  // Disconnect 
+  /*
+  GSM->println("AT+CGATT=0");
+  if (!IsReadOK(3000))
+    return false;
+ */
+
+  GSM->println("AT+CGATT?");
+  if (!IsReadOK(/*timeout=*/1000))
+    return false;
+    
+  /*
+  Perform a GPRS Attach. The device should be attached to the GPRS network before a PDP context can be established
+  */
+  GSM->println("AT+CGATT=1");
+  if (!IsReadOK(/*timeout=*/3000))
+    return false;
+    
+    
+    
+  // defines connection type (command 3 (set), profile 1)
+  GSM->println("AT+SAPBR=3,1,\"CONTYPE\",\"GPRS\"");
+  if (!IsReadOK(/*timeout=*/2000))
+    return false;
+
+  /*
+  Things I have tried. 
+  APN               User        pass
+  internet.com,     wapuser1,   wap
+  internet.com                          Works! 
+  */
+    
+  // defines APN on profile 1
+  GSM->println("AT+SAPBR=3,1,\"APN\",\"internet.com\"");
+  if (!IsReadOK(/*timeout=*/2000))
+    return false;
+    /*
+  GSM->println("AT+SAPBR=3,1,\"USER\",\"wapuser1\"");
+  if (!IsReadOK(2000))
+    return false;
+    
+  GSM->println("AT+SAPBR=3,1,\"PWD\",\"wap\"");
+  if (!IsReadOK(2000))
+    return false;
+  */
+  
+   // Opens GPRS connection using profile 1, may return OK or ERROR
+ // I put the "AT+SAPBR=1,1" command to be always called each time because I noticed, on long run testings, that GPRS connection may drop accidentally, so basically I bruteforce the connection.
+  GSM->println("AT+SAPBR=1,1");
+  if (!IsReadOK(/*timeout=*/2000))
+    return false;
+    
+  // initializes embedded HTTP rutine, return OK or ERROR
+  GSM->println("AT+HTTPINIT");
+  if (!IsReadOK(/*timeout=*/3500))
+    return false;     
+
+  return true;
+}
+
+bool SIM900::PingHTTP(goCoord * lastValid) {
+    if( lastValid == NULL ) {
+        return false; 
+    }
+    
+  GSM->flush();
+  // Issue an HTTP Url Request
+  GSM->print("AT+HTTPPARA=\"URL\",\"http://www.abluestar.com/temp/gps/?");
+    
+    if( lastValid->signalLock ) {
+          GSM->print("lat=");
+          GSM->print(lastValid->latitude);
+
+          GSM->print("&lon=");
+          GSM->print(lastValid->longitude);
+          
+          GSM->print("&sat=");
+          GSM->print(lastValid->satellitesUsed);
+          
+          GSM->print("&alt=");
+          GSM->print(lastValid->altitude);  
+          
+          
+  
+    } else {
+        GSM->print("err=NoSignalLock");
+    }
+    
+    GSM->println("\"");
+    if (!IsReadOK(/*timeout=*/10000))
+        return false;
+
+  // gets the url by GET method
+  GSM->println("AT+HTTPACTION=0");
+  if (!IsReadOK(/*timeout=*/15000))
+    return false;
+
+   
+  GSM->println("AT+HTTPREAD");
+  if (!IsReadOK(15000))
+    return false;
+   
+  
+  // finishes the HTTP session  
+  GSM->println("AT+HTTPTERM");
+  if (!IsReadOK(500))
+    return false;
+    
+  GSM->println("");
+
+  return true;
+}

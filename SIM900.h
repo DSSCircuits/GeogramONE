@@ -9,6 +9,8 @@
 #include "WProgram.h"
 #endif
 
+#include "PA6C.h"
+
 #define TIMESTORETRY    3
 #define GSMSTATUS       5      
 #define GSMSWITCH       6
@@ -67,6 +69,11 @@ class SIM900
 		uint8_t getGeo(geoSmsData *, char *);
 		uint8_t confirmAtCommand(char *, unsigned long);
 		uint8_t cipStatus();
+        
+        bool PingHTTP(goCoord * lastValid); 
+        bool SetupHTTP();
+        bool IsReadOK(unsigned long timeout_millis); 
+        
 	private:
 		uint8_t powerOnGSM();
 		void initializeGSM();
