@@ -72,12 +72,15 @@ void setup()
 	ggo.init();
 	gps.init(115200);
 	sim900.init(9600);
+        
 	MAX17043init(7, 500);
 	BMA250init(3, 500);
+
 	attachInterrupt(0, ringIndicator, FALLING);
 	attachInterrupt(1, movement, FALLING);
 	PCintPort::attachInterrupt(PG_INT, &charger, CHANGE);
 	PCintPort::attachInterrupt(FUELGAUGEPIN, &lowBattery, FALLING);
+
 	goesWhere(smsData.smsNumber);
 	call = sim900.checkForMessages();
 	if(call == 0xFF)
@@ -110,58 +113,160 @@ void setup()
 	if(swInt == 0x06)
 		PCintPort::attachInterrupt(10, &d10Interrupt, FALLING);
      
-    miniTimer = millis();
+    miniTimer = 0;
 
 }
 
 
-boolean SendHTTPCords( goCoord * lastValid ) {
-  
-  
-  if( millis() - miniTimer < 1000*10 ) {
-    // We are trying to poll sooner then 10 secs 
-    return  true ; // Nothing to do. 
-  }
-  
-  if( lastValid == NULL ) {
-    return false; // Nothing to send. 
-  }
-  
-  if( ! lastValid->signalLock ) {
-    return false; // Not connected.
-  }
-  /*
-  if( sim900.signalQuality() == 0 ) {
-    return true ;// No signal to cell towers 
-  }
-  */
-  
-  // Try and send the message three times. 
-  uint8_t attempts = 3 ;   
-  while( attempts > 0 ) {
-    attempts--; 
+boolean DoHTTP()
+{    
+    // Are we connected to the GPS? 
+    /*
+	if(!lastValid.signalLock) {
+		return false;
+    }
+    */
     
-    // Connect to the Internet
-    if( ! sim900.SetupHTTP() ) {
-      continue; // Try again. 
+    if( millis() - miniTimer < 1000*10 ) {
+        // We are trying to poll sooner then 10 secs 
+        return false ; // Nothing to do. 
     }
     
-    // Send current GPS info to webserver. 
-    if( ! sim900.PingHTTP(lastValid ) ) {
-      continue; // Try again 
+    GSM.flush();
+        
+    static bool sendOK = false;  
+	if(!sendOK)	
+    {        
+        // sim900.confirmAtCommand("OK",500);
+        if(!sim900.signalQuality()) {
+            // No signal to the Cell towers. 
+            return false;
+        }
+        if(!sim900.checkNetworkRegistration())
+        {
+            // Check the avliable networks
+            GSM.println("AT+CGATT?");	
+            if(sim900.confirmAtCommand("OK",10000) != 0) {
+                GSM.println("Error: Could not get the avliable networks. ");
+                return false; 
+            }
+        
+            // Perform a GPRS Attach. The device should be attached to the GPRS network before a PDP context can be established
+            GSM.println("AT+CGATT=1");	
+            if(sim900.confirmAtCommand("OK",10000) != 0) 
+            {
+                // ERROR, need to reboot GSM module
+                static unsigned long resetGSM = millis();
+                
+                // if more than 5 minutes reboot GSM module
+                if((millis() - resetGSM) >= 300000) 
+                {
+                    sim900.powerDownGSM();
+                    sim900.init(9600);
+                    resetGSM = millis();
+                    return false; // Try again. 
+                }
+            }
+        } else {
+            return false; // Not sent but we need to re-run this command. 
+        }
+		
+        
+        // defines connection type (command 3 (set), profile 1)
+        GSM.println("AT+SAPBR=3,1,\"CONTYPE\",\"GPRS\"");
+        if ( sim900.confirmAtCommand("OK",10000) != 0) {        
+            GSM.println("Error: Could not define the connectin type");        
+            return false;
+        }
+        
+        // Connect to the APN 
+        GSM.println("AT+SAPBR=3,1,\"APN\",\"internet.com\"");
+        if( sim900.confirmAtCommand("OK",3000) != 0 ) {
+            GSM.println("Error: Could not set the APN");
+            return false ;
+        }
+        
+        // Opens GPRS connection using profile 1, may return OK or ERROR
+        // I put the "AT+SAPBR=1,1" command to be always called each time because I noticed, on long run testings, that GPRS connection may drop accidentally, so basically I bruteforce the connection.
+        GSM.println("AT+SAPBR=1,1");
+        if ( sim900.confirmAtCommand("OK",3000) != 0) {
+            GSM.println("Error: Could not set the profile to 1");
+            return false;
+        }
+
+        // initializes embedded HTTP rutine, return OK or ERROR
+        GSM.println("AT+HTTPINIT");
+        if ( sim900.confirmAtCommand("OK",3500) != 0 ) {
+            GSM.println("Error: initializes embedded HTTP rutine");
+            return false;
+        }
+        
+        
+	}
+    
+    // Ready to send the message. 
+    GSM.flush();
+    
+    // Issue an HTTP Url Request
+    GSM.print("AT+HTTPPARA=\"URL\",\"http://www.abluestar.com/temp/gps/?");
+    if( lastValid.signalLock ) {
+          GSM.print("lat=");
+          GSM.print(lastValid.latitude);
+          GSM.print("&lon=");
+          GSM.print(lastValid.longitude);
+          GSM.print("&sat=");
+          GSM.print(lastValid.satellitesUsed);
+          GSM.print("&alt=");
+          GSM.print(lastValid.altitude);  
+    } else {
+        GSM.print("err=NoSignalLock");
     }    
-    // Everything worked. 
+    GSM.println("\"");
+    if ( sim900.confirmAtCommand("OK",10000) != 0 ) {
+        GSM.println("Error: Set the url to be polled");
+        sendOK = false;
+        return sendOK;
+    }
+
+    // gets the url by GET method
+    GSM.println("AT+HTTPACTION=0");
+    if ( sim900.confirmAtCommand("OK",15000) != 0 ) {
+        GSM.println("Error: Could not request the url");
+        sendOK = false;
+        return sendOK;
+    }
+    delay( 1000); 
+
+    GSM.println("AT+HTTPREAD");
+    
+    delay( 3000 );
+    GSM.flush();
+    /*
+    if ( sim900.confirmAtCommand("HTTPACTION=0,200",15000) != 0 ) {
+        GSM.println("Error: Could not read the response from the webserver. ");
+        sendOK = false;
+        return sendOK;
+    } 
+*/    
+     
+    GSM.println("AT+HTTPTERM");
+    if ( sim900.confirmAtCommand("OK",15000) != 0 ) {
+        GSM.println("Error: Could not end the HTTP session. ");
+        sendOK = false;
+        return sendOK;
+    }  
+   
+    GSM.println("");
+    GSM.flush();
     
     // Reset the timer 
     miniTimer = millis() ; 
     
-    // Everything is good. 
-    return true  ; 
-  }
-  
-  // Something went wrong. 
-  return false;   
+    // Everything looks good to me. 
+    sendOK = true;
+    return sendOK; 
 }
+
 
 
 void loop()
@@ -174,8 +279,9 @@ void loop()
     gps.updateRegionalSettings(tZ, eM, &lastValid);
   }
 
-  // Check and update the webserver with the GPS cords.       
-  SendHTTPCords( &lastValid );
+  // Check and update the webserver with the GPS cords.     
+  DoHTTP();  
+  // SendHTTPCords( &lastValid );
        
 
 	if(call)
@@ -209,13 +315,6 @@ void loop()
 						command7();
 					else if(smsData.smsCmdNum == 8)
 						command8();
-					else if(smsData.smsCmdNum == 255)
-					{
-						sim900.gsmSleepMode(0);
-						sim900.powerDownGSM();
-						delay(2000);
-						sim900.init(9600);
-					}
 				}
 			}
 		}
@@ -397,6 +496,9 @@ void loop()
 		}
 		sim900.gsmSleepMode(2);
 	}
+
+
+        // sim900.PingHTTP(666, 555, 333);
 } 
 
 void printEEPROM(uint16_t eAddress)
@@ -424,3 +526,6 @@ void goesWhere(char *smsAddress, uint8_t replyOrStored)
 				break;
 	}
 }
+
+
+

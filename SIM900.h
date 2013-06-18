@@ -70,9 +70,6 @@ class SIM900
 		uint8_t confirmAtCommand(char *, unsigned long);
 		uint8_t cipStatus();
         
-        bool PingHTTP(goCoord * lastValid); 
-        bool SetupHTTP();
-        bool IsReadOK(unsigned long timeout_millis); 
         
 	private:
 		uint8_t powerOnGSM();
