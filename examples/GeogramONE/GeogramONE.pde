@@ -120,20 +120,17 @@ void setup()
 
 boolean DoHTTP()
 {    
-    // Are we connected to the GPS? 
-    /*
+    // Are we connected to the GPS?     
 	if(!lastValid.signalLock) {
 		return false;
     }
-    */
+    
     
     if( millis() - miniTimer < 1000*10 ) {
         // We are trying to poll sooner then 10 secs 
         return false ; // Nothing to do. 
     }
-    
-    GSM.flush();
-        
+           
     static bool sendOK = false;  
 	if(!sendOK)	
     {        
@@ -147,7 +144,7 @@ boolean DoHTTP()
             // Check the avliable networks
             GSM.println("AT+CGATT?");	
             if(sim900.confirmAtCommand("OK",10000) != 0) {
-                GSM.println("Error: Could not get the avliable networks. ");
+                // GSM.println("Error: Could not get the available networks. ");
                 return false; 
             }
         
@@ -171,18 +168,26 @@ boolean DoHTTP()
             return false; // Not sent but we need to re-run this command. 
         }
 		
+        /*
+        GSM.println("AT+SAPBR=0,1");
+        if ( sim900.confirmAtCommand("OK",3000) != 0) {
+            GSM.println("Error: Could not set the profile to 0");
+            return false;
+        }        
+        */
+        
         
         // defines connection type (command 3 (set), profile 1)
         GSM.println("AT+SAPBR=3,1,\"CONTYPE\",\"GPRS\"");
         if ( sim900.confirmAtCommand("OK",10000) != 0) {        
-            GSM.println("Error: Could not define the connectin type");        
+            // GSM.println("Error: Could not define the connectin type"); 
             return false;
         }
         
         // Connect to the APN 
         GSM.println("AT+SAPBR=3,1,\"APN\",\"internet.com\"");
         if( sim900.confirmAtCommand("OK",3000) != 0 ) {
-            GSM.println("Error: Could not set the APN");
+            // GSM.println("Error: Could not set the APN");
             return false ;
         }
         
@@ -190,49 +195,83 @@ boolean DoHTTP()
         // I put the "AT+SAPBR=1,1" command to be always called each time because I noticed, on long run testings, that GPRS connection may drop accidentally, so basically I bruteforce the connection.
         GSM.println("AT+SAPBR=1,1");
         if ( sim900.confirmAtCommand("OK",3000) != 0) {
-            GSM.println("Error: Could not set the profile to 1");
+            // GSM.println("Error: Could not set the profile to 1");
             return false;
         }
-
-        // initializes embedded HTTP rutine, return OK or ERROR
-        GSM.println("AT+HTTPINIT");
-        if ( sim900.confirmAtCommand("OK",3500) != 0 ) {
-            GSM.println("Error: initializes embedded HTTP rutine");
-            return false;
-        }
-        
-        
 	}
     
     // Ready to send the message. 
     GSM.flush();
     
+   // initializes embedded HTTP rutine, return OK or ERROR
+    GSM.println("AT+HTTPINIT");
+    if ( sim900.confirmAtCommand("OK",3500) != 0 ) {
+        // GSM.println("Error: initializes embedded HTTP rutine");
+        sendOK = false; 
+        return sendOK;
+    }         
+    
+    GSM.println("AT+HTTPPARA=\"CID\", \"1\"");
+    if ( sim900.confirmAtCommand("OK",10000) != 0 ) {
+        //GSM.println("Error: Set the CID");
+        sendOK = false; 
+        return sendOK;
+    }     
+        
     // Issue an HTTP Url Request
     GSM.print("AT+HTTPPARA=\"URL\",\"http://www.abluestar.com/temp/gps/?");
+    
+    
+    
+    GSM.print("id=123&");    
     if( lastValid.signalLock ) {
+          
+          long latitude = (long) lastValid.latitude ; 
+          long longitude = (long) lastValid.longitude ; 
+        
           GSM.print("lat=");
-          GSM.print(lastValid.latitude);
+          GSM.print(abs( latitude/1000000) );
+          GSM.print("+");
+          GSM.print(abs(( latitude % 1000000) / 10000.0), 4);    
+          // GSM.print(lastValid.latitude);
+          
           GSM.print("&lon=");
-          GSM.print(lastValid.longitude);
-          GSM.print("&sat=");
+          GSM.print(abs( longitude / 1000000));
+          GSM.print("+");
+          GSM.print(abs(( longitude % 1000000) / 10000.0), 4);    
+          //GSM.print(lastValid.longitude);
+          
+          /*GSM.print("&satellitesUsed=");
           GSM.print(lastValid.satellitesUsed);
-          GSM.print("&alt=");
+          GSM.print("&altitude=");
           GSM.print(lastValid.altitude);  
+          GSM.print("&speed=");
+          GSM.print(lastValid.speed);  
+          // GSM.print("&battery=");
+          // GSM.print(lastValid.battery);  
+          // GSM.print("&direction=");
+          // GSM.print(lastValid.direction);  
+          GSM.print("&date=");
+          GSM.print(lastValid.date);  
+          GSM.print("&time=");
+          GSM.print(lastValid.time);  
+          */
+          
     } else {
         GSM.print("err=NoSignalLock");
     }    
     GSM.println("\"");
     if ( sim900.confirmAtCommand("OK",10000) != 0 ) {
-        GSM.println("Error: Set the url to be polled");
-        sendOK = false;
+        //GSM.println("Error: Set the url to be polled");
+        sendOK = false; 
         return sendOK;
     }
 
     // gets the url by GET method
     GSM.println("AT+HTTPACTION=0");
     if ( sim900.confirmAtCommand("OK",15000) != 0 ) {
-        GSM.println("Error: Could not request the url");
-        sendOK = false;
+        //GSM.println("Error: Could not request the url");
+        sendOK = false; 
         return sendOK;
     }
     delay( 1000); 
@@ -241,18 +280,12 @@ boolean DoHTTP()
     
     delay( 3000 );
     GSM.flush();
-    /*
-    if ( sim900.confirmAtCommand("HTTPACTION=0,200",15000) != 0 ) {
-        GSM.println("Error: Could not read the response from the webserver. ");
-        sendOK = false;
-        return sendOK;
-    } 
-*/    
+   
      
     GSM.println("AT+HTTPTERM");
     if ( sim900.confirmAtCommand("OK",15000) != 0 ) {
-        GSM.println("Error: Could not end the HTTP session. ");
-        sendOK = false;
+        //GSM.println("Error: Could not end the HTTP session. ");
+        sendOK = false; 
         return sendOK;
     }  
    
@@ -271,6 +304,7 @@ boolean DoHTTP()
 
 void loop()
 {
+
   // Update the GPS coordinates if possiable
   if(!gps.getCoordinates(&lastValid))
   {
@@ -281,7 +315,6 @@ void loop()
 
   // Check and update the webserver with the GPS cords.     
   DoHTTP();  
-  // SendHTTPCords( &lastValid );
        
 
 	if(call)
