@@ -118,6 +118,124 @@ void setup()
 }
 
 
+void httpPost()
+{
+    // Are we connected to the GPS?     
+	if(!lastValid.signalLock) {
+		return ;
+    }
+    
+    if( millis() - miniTimer < 1000*10 ) {
+        // We are trying to poll sooner then 10 secs 
+        return  ; // Nothing to do. 
+    }
+    miniTimer = millis() ; 
+    
+	sim900.gsmSleepMode(0);
+	
+	GSM.println("AT+SAPBR=3,1,\"Contype\",\"GPRS\"");
+	sim900.confirmAtCommand("OK",5000);
+	
+	GSM.println("AT+SAPBR=3,1,\"APN\",\"internet.com\""); //need to put your provider's APN here
+	sim900.confirmAtCommand("OK",5000);
+	
+	GSM.println("AT+SAPBR=1,1");
+	sim900.confirmAtCommand("OK",5000);// Tries to connect GPRS 
+	
+	GSM.println("AT+HTTPINIT");
+	sim900.confirmAtCommand("OK",5000);
+	
+	GSM.println("AT+HTTPPARA=\"CID\",1");
+	sim900.confirmAtCommand("OK",5000);
+	
+	GSM.print("AT+HTTPPARA=\"URL\",\"http://www.abluestar.com/temp/gps/?id=123"); //web address to send data to
+     if( lastValid.signalLock ) {
+          GSM.print("&lat=");
+          if(lastValid.ns == 'S') {
+              GSM.print("-");
+          }
+          GSM.print(lastValid.latitude[0]);
+          GSM.print(lastValid.latitude[1]);
+          GSM.print("+");
+          GSM.print(lastValid.latitude + 2);
+          
+          GSM.print("&lon=");
+          if(lastValid.ew == 'W') {
+              GSM.print("-");
+          }
+      	  GSM.print(lastValid.longitude[0]);
+          GSM.print(lastValid.longitude[1]);
+          GSM.print(lastValid.longitude[2]);
+          GSM.print("+");
+          GSM.print(lastValid.longitude + 3);
+
+          
+          GSM.print("&alt=");
+          GSM.print(lastValid.altitude);  
+        
+          GSM.print("&sat=");
+          GSM.print(lastValid.satellitesUsed);          
+          
+          GSM.print("&speed=");
+          GSM.print(lastValid.speed);  
+          
+          GSM.print("&batp=");          
+          GSM.print(MAX17043getBatterySOC()/100);  
+          
+          GSM.print("&batv=");          
+          GSM.print( MAX17043getBatteryVoltage()/1000.0, 2 );  
+          
+          GSM.print("&dir=");
+          GSM.print(lastValid.courseDirection);  
+          
+          
+          // YYYY-MM-DD
+          GSM.print("&date=");          
+          GSM.print(lastValid.date + 4 );  
+          GSM.print("-" );  
+          GSM.print(lastValid.date[2] );  
+          GSM.print(lastValid.date[3] );  
+          GSM.print("-" );  
+          GSM.print(lastValid.date[0] );  
+          GSM.print(lastValid.date[1] );  
+          
+          // HH::MM::SS
+          GSM.print("&time=");
+          GSM.print(lastValid.time[0] );  
+          GSM.print(lastValid.time[1] );  
+          GSM.print("-" );  
+          GSM.print(lastValid.time[2] );  
+          GSM.print(lastValid.time[3] );  
+          GSM.print("-" );  
+          GSM.print(lastValid.time +4 );  
+          
+    } else {
+        GSM.print("&err=NoSignalLock");
+    }    
+    GSM.println("\"");    
+	sim900.confirmAtCommand("OK",5000);
+	
+	GSM.println("AT+HTTPDATA=10,10000"); //100 refers to how many bytes you're sending.  You'll probably have to tweak or just put a large #
+	sim900.confirmAtCommand("DOWNLOAD",5000);
+	
+	GSM.println("0123456789"); //ie latitude,longitude,etc...
+	sim900.confirmAtCommand("OK",5000);
+	
+	GSM.println("AT+HTTPACTION=1"); //POST the data
+	sim900.confirmAtCommand("ACTION:",5000);
+	
+	GSM.println("AT+HTTPTERM"); //terminate http
+	sim900.confirmAtCommand("OK",5000);
+	
+	GSM.println("AT+SAPBR=0,1");// Disconnect GPRS
+	sim900.confirmAtCommand("OK",5000);
+	sim900.confirmAtCommand("DEACT",5000);
+	
+	sim900.gsmSleepMode(2);
+}
+
+
+#if 0 
 boolean DoHTTP()
 {    
     // Are we connected to the GPS?     
@@ -299,7 +417,7 @@ boolean DoHTTP()
     sendOK = true;
     return sendOK; 
 }
-
+#endif 
 
 
 void loop()
@@ -314,7 +432,8 @@ void loop()
   }
 
   // Check and update the webserver with the GPS cords.     
-  DoHTTP();  
+  httpPost() ; 
+  // DoHTTP();  
        
 
 	if(call)
