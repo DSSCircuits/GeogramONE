@@ -75,8 +75,8 @@ if( DEBUG_LOG_REQUEST ) {
     $logtofile .= print_r($_REQUEST, TRUE);
 
     // Dump to a file 
-    $fp = fopen( DEBUG_LOG_FILE , 'a+');
-    fwrite($fp, $req_dump);
+    $fp = fopen( 'request.txt' , 'a+');
+    fwrite($fp, $logtofile);
     fclose($fp);
 } 
   
@@ -105,25 +105,28 @@ if( isset($_REQUEST['act']) ) {
     if( strcmp( $_REQUEST['act'], 'ping' ) == 0 ) {
         // We want to save some data. 
         // Do we have the required prameters? 
-        if( isset( $_REQUEST['id'] ) && isset( $_REQUEST['longitude'] ) && isset( $_REQUEST['latitude'] ) ) 
+        if( isset( $_REQUEST['id'] ) && isset( $_REQUEST['lon'] ) && isset( $_REQUEST['lat'] ) ) 
         {
             // We have everything we needed. 
             // Grab the optional prameters as well. 
             // http://php.net/manual/en/function.mysql-real-escape-string.php 
-            $device_id      	= mysql_real_escape_string( $_REQUEST['id']    ); 
-            $latitude       	= mysql_real_escape_string( $_REQUEST['lat']   ); 
-            $longitude      	= mysql_real_escape_string( $_REQUEST['lon']   ); 
-            $altitude       	= mysql_real_escape_string( $_REQUEST['alt']   ); 
-            $satellitesUsed 	= mysql_real_escape_string( $_REQUEST['sat']   ); 
-            $speed          	= mysql_real_escape_string( $_REQUEST['speed'] ); 
-            $battery_percent	= mysql_real_escape_string( $_REQUEST['batp']  ); 
-            $battery_voltage	= mysql_real_escape_string( $_REQUEST['batv']  ); 
-            $direction          = mysql_real_escape_string( $_REQUEST['dir']   ); 
-            $date          	    = mysql_real_escape_string( $_REQUEST['date']  ); 
-            $time          	    = mysql_real_escape_string( $_REQUEST['time']  );          
+            $device_id      	= mysql_escape_string( $_REQUEST['id']    ); 
+            $latitude       	= mysql_escape_string( $_REQUEST['lat']   ); 
+            $longitude      	= mysql_escape_string( $_REQUEST['lon']   ); 
+            $altitude       	= mysql_escape_string( $_REQUEST['alt']   ); 
+            $satellitesUsed 	= mysql_escape_string( $_REQUEST['sat']   ); 
+            $speed          	= mysql_escape_string( $_REQUEST['speed'] ); 
+            $battery_percent	= mysql_escape_string( $_REQUEST['batp']  ); 
+            $battery_voltage	= mysql_escape_string( $_REQUEST['batv']  ); 
+            $direction          = mysql_escape_string( $_REQUEST['dir']   ); 
+            $date          	    = mysql_escape_string( $_REQUEST['date']  ); 
+            $time          	    = mysql_escape_string( $_REQUEST['time']  );          
             
             // Build the query. 
             $sqlQuery  = 'INSERT INTO '. SETTING_DATABASE_TABLE .' (`device_id` ,`longitude` ,`latitude` ,`altitude` ,`satellitesUsed` ,`speed`, `battery_percent`, `battery_voltage`, `direction`, `date`, `time` ) VALUES ("'. $device_id .'",  "'. $longitude .'",  "'. $latitude .'",  "'. $altitude .'",  "'. $satellitesUsed .'",  "'. $speed .'",  "'. $battery_percent .'",  "'. $battery_voltage .'",  "'. $direction .'",  "'. $date .'",  "'. $time .'" );';
+    
+            $db = mysql_connect(SETTING_DATABASE_HOST,SETTING_DATABASE_USERNAME,SETTING_DATABASE_PASSWORD) or die ('I cannot connect to the database because: ' . mysql_error());
+            mysql_select_db( SETTING_DATABASE_NAME, $db );    
     
             // Run the query 
             mysql_query( $sqlQuery ) ;
@@ -173,7 +176,12 @@ function initialize() {
     mysql_select_db( SETTING_DATABASE_NAME, $db );
     
     // Get the values from the database. 
-    $sqlQuery = 'SELECT * FROM '.SETTING_DATABASE_TABLE.' ORDER BY id DESC '; // LIMIT 0 , 500
+    $sqlQuery = 'SELECT * FROM '.SETTING_DATABASE_TABLE.' ';
+    if( isset( $_REQUEST['id'] ) ) {
+        $sqlQuery .= 'WHERE device_id="'. mysql_escape_string( $_REQUEST['id'] ) .'" ';
+    }
+    $sqlQuery .= ' ORDER BY id DESC LIMIT 0 , 500'; // 
+        
     $result = mysql_query( $sqlQuery ) ;
     if( $result == FALSE || mysql_errno() != 0 ) {
         // There was a MySQL error 
@@ -233,7 +241,7 @@ function initialize() {
     echo "];";
     
     // We no longer need the database. Close it. 
-    mysql_close( $db );
+    // mysql_close( $db );
 ?> 
     // Center on the last point used. 
     var myLatLng = new google.maps.LatLng(locations[0][1], locations[0][2]);
@@ -249,7 +257,26 @@ function initialize() {
     // Add the pointers to the map. 
     var infowindow = new google.maps.InfoWindow();
     var marker, i;
-    for (i = 0; i < locations.length; i++) {  
+
+    // Add the current marker 
+    // Car icon: Katya Sotnikova, from The Noun Project
+    // http://thenounproject.com/noun/car/?dwn=PD&dwn_icon=654#icon-No12590
+    marker = new google.maps.Marker({
+        position: new google.maps.LatLng(locations[0][1], locations[0][2]),
+        icon: "http://www.abluestar.com/temp/gps/car.png",
+        map: map
+    });
+
+    google.maps.event.addListener(marker, 'click', (function(marker, i) {
+        return function() {
+            infowindow.setContent(locations[0][0]);
+            infowindow.open(map, marker);
+        }
+    })(marker, 0));     
+    
+    
+    // Do not add a pointer for the first item. it will have its own icon. 
+    for (i = 1; i < locations.length; i++) {  
         marker = new google.maps.Marker({
             position: new google.maps.LatLng(locations[i][1], locations[i][2]),
             // icon: "http://labs.google.com/ridefinder/images/mm_20_blue.png",
@@ -263,6 +290,10 @@ function initialize() {
             }
         })(marker, i));    
     }
+    
+
+    
+    
 
     // Add the points to a poly line 
     var pathCoordinates = []; 
@@ -283,6 +314,30 @@ google.maps.event.addDomListener(window, 'load', initialize);
     </script>
   </head>
   <body>
+    <?php
+        // Header 
+        $sqlQuery = 'SELECT DISTINCT(device_id) FROM `gps_map` ';
+        
+        $result = mysql_query( $sqlQuery ) ;
+        if( $result == FALSE || mysql_errno() != 0 ) {
+            // There was a MySQL error 
+            echo "MySql Error: ". mysql_error()."\n";   
+            echo "Sql Statment: ". $sqlQuery ."\n";
+            exit(); 
+        }
+        
+        if( mysql_num_rows( $result ) <= 0 ) {
+            // No data. 
+            echo "Error: No data was returned. \n";
+            exit();         
+        }
+        
+        echo '<div id="menu">';
+        while($row = mysql_fetch_assoc($result)) {
+            echo '<a href="?id='. $row['device_id'] .'">'. $row['device_id'] .'</a> | ';
+        }
+        echo '</div>';
+    ?>
     <div id="map-canvas"></div>
   </body>
 </html>

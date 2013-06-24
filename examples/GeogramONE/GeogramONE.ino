@@ -51,8 +51,8 @@ Notes:
  */ 
 
 
-#define TIMER_POLL_WITH_DATA        1000*60*1
-#define TIMER_POLL_HEART_BEAT       1000*60*60
+#define TIMER_POLL_WITH_DATA        (1000*60*1)
+#define TIMER_POLL_HEART_BEAT       (1000*60*30)
 #define ENABLE_DEBUG_MESSAGES       false 
 
 GeogramONE      ggo;
@@ -74,32 +74,55 @@ void DebugPrint( char * msg) {
     Serial.println( msg ); 
 }
 
-
+/**
+ * 0 = Do not check 
+ * 1 = Check, there is data avaliable 
+ * 2 = Heart beat 
+ */
+uint8_t CheckTimeToPoll() 
+{
+    // Always update the GPS cords. 
+    uint8_t gps_status = gps.getCoordinates(&lastValid); 
+    
+    // Get the current time 
+    unsigned long currentTime = millis() ; 
+    
+    if( currentTime < miniTimer ) {
+        // Function: millis()
+        // Returns the number of milliseconds since the Arduino board began 
+        // running the current program. This number will overflow (go back 
+        // to zero), after approximately 50 days.
+        
+        // millis has overflowed. Reset miniTimer
+        miniTimer = 0 ; 
+    }
+    
+    // Has our heart beat timer expired? 
+    if( currentTime - miniTimer > TIMER_POLL_HEART_BEAT ) {
+        // We need to send the Heart beat no matter what. 
+        return 2; // Heart Beat 
+    }  
+    
+    // Check to see if we need to poll at all. 
+    if( gps_status == 0 ) { 
+        // We have fresh GPS cords 
+        if( currentTime - miniTimer > TIMER_POLL_WITH_DATA ) {
+            return  1; 
+        }
+    }
+    
+    return 0; // Nothing to do. 
+}
 
 void httpPost()
 {
-    // ToDo: only poll the GPS when we need to. 
-    // ToDo: shut down the GPS if we don't need it. 
-    // Update the GPS coordinates if possiable
-    gps.getCoordinates(&lastValid); 
-
-    if( millis() - miniTimer < TIMER_POLL_WITH_DATA ) {
-        // We are trying to poll sooner then we should.
-        return  ; // Nothing to do. 
+    if( CheckTimeToPoll() == 0 ) {
+        return ; // Too soon or nothing to report. 
     }
-    
-    // Are we connected to the GPS?   
-    if( ! lastValid.signalLock  ) {
-        // We are not connected to the GPS. 
-        // Has our heart beat timer expired? 
-        if( millis() - miniTimer < TIMER_POLL_HEART_BEAT ) {
-            // We are trying to poll sooner then we should.
-            return  ; // Nothing to do. 
-        }  
-    } 
+
+    // Update the timer.
     miniTimer = millis() ; 
-    
-    
+       
     
     // Wake up the modem. 
     // DebugPrint( "Waiting up the GSM modem"); 
@@ -125,7 +148,7 @@ void httpPost()
     //web address to send data to
 	GSM.print("AT+HTTPPARA=\"URL\",\"");
     GSM.print(SETTING_WEBSERVER_URL);
-    GSM.print("?id="); 
+    GSM.print("?act=ping&id="); 
     GSM.print(phoneNumber); 
     
     // If we have GPS lock we should send the GPS data. 
@@ -199,16 +222,15 @@ void httpPost()
     }    
     
     // Get the battery state 
-      GSM.print("&batp=");          
-      GSM.print(MAX17043getBatterySOC()/100);  
-      
-      GSM.print("&batv=");          
-      GSM.print( MAX17043getBatteryVoltage()/1000.0, 2 );      
-    
+    GSM.print("&batp=");          
+    GSM.print(MAX17043getBatterySOC()/100);  
+
+    GSM.print("&batv=");          
+    GSM.print( MAX17043getBatteryVoltage()/1000.0, 2 );      
+
     // All done send the message. 
     GSM.println("\"");    
 	sim900.confirmAtCommand("OK",5000);
-	
     
 	GSM.println("AT+HTTPDATA=2,10000"); 
 	sim900.confirmAtCommand("DOWNLOAD",5000);
