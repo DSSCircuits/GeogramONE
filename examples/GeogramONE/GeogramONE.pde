@@ -11,11 +11,11 @@ under CC-SA v3 license.
 #include <I2C.h>
 #include "eepromAnything.h"
 
-#define USEFENCE1	1  //set to zero to free up code space if option is not needed
-#define USEFENCE2	1  //set to zero to free up code space if option is not needed
-#define USEFENCE3	1  //set to zero to free up code space if option is not needed
-#define USESPEED	1  //set to zero to free up code space if option is not needed
-#define USEMOTION	1  //set to zero to free up code space if option is not needed
+#define USEFENCE1			1  //set to zero to free up code space if option is not needed
+#define USEFENCE2			1  //set to zero to free up code space if option is not needed
+#define USEFENCE3			1  //set to zero to free up code space if option is not needed
+#define USESPEED			1  //set to zero to free up code space if option is not needed
+#define USEMOTION			1  //set to zero to free up code space if option is not needed
 
 GeogramONE ggo;
 AltSoftSerial GSM;
@@ -170,7 +170,21 @@ void loop()
 		command3();
 	#endif
 	if(udp)
-		udpOrange();
+	{
+		if(lastValid.signalLock && (lastValid.updated & 0x01))
+		{
+			if((udpInterval > 5))
+				sim900.gsmSleepMode(0);
+			if(!udpOrange())
+			{
+				udp = 0;
+				lastValid.updated &= ~(0x01);
+				if(udpInterval > 5)
+					sim900.gsmSleepMode(2);
+			}
+		}
+	}
+	
 	if(battery)
 	{
 		sim900.gsmSleepMode(0);

@@ -1,12 +1,6 @@
-void udpOrange()
+uint8_t udpOrange()
 {
 	static bool sendOK = false;
-	if(!lastValid.signalLock)
-		return;
-	if(!(lastValid.updated & 0x01))
-		return;
-	if(udpInterval > 5)
-		sim900.gsmSleepMode(0);
 	if(!sendOK)	
 	{
 		for(uint8_t g = 0; g < 11; g++)
@@ -18,7 +12,7 @@ void udpOrange()
 		{
 			sim900.confirmAtCommand("OK",500);
 			if(!sim900.signalQuality())
-				return;
+				return 6;
 			if(!sim900.checkNetworkRegistration())
 			{
 				GSM.println("AT+CGATT=1");	
@@ -35,7 +29,7 @@ void udpOrange()
 				}
 			}
 			else
-				return;
+				return 7;
 		}
 		uint8_t cStatus = sim900.cipStatus();
 		switch(cStatus)
@@ -45,17 +39,17 @@ void udpOrange()
 				printEEPROM(GPRS_APN);
 				GSM.println("\"");
 				if(sim900.confirmAtCommand("OK",3000))
-					return;
+					return 2;
 			case 1:
 				GSM.println("AT+CIICR");
 				if(sim900.confirmAtCommand("OK",5000))
-					return;
+					return 2;
 			case 2:
 			//	return; //might need to put return back in
 			case 3:
 				GSM.println("AT+CIFSR");
 				if(sim900.confirmAtCommand(".",2000) == 1)
-					return;
+					return 2;
 				sim900.confirmAtCommand("\r\n",100);
 			case 4:
 			{
@@ -67,7 +61,7 @@ void udpOrange()
 				GSM.print(portNumber,DEC);
 				GSM.println("\"");
 				if(sim900.confirmAtCommand("T OK",2000))
-					return;
+					return 2;
 			}
 			case 5:
 				break; //might need to change to return because of transition between 5 and 6
@@ -78,9 +72,9 @@ void udpOrange()
 			case 9:
 				GSM.println("AT+CIPSHUT");
 				sim900.confirmAtCommand("OK",3000);
-				return;
+				return 2;
 			default:
-				return;
+				return 2;
 		}
 	}
 	GSM.println("AT+CIPSEND");
@@ -89,10 +83,8 @@ void udpOrange()
 		printEEPROM(IMEI);
 		printEEPROM(UDP_HEADER);
 		GSM.print(lastValid.date);
-	//	GSM.print("NA");
 		GSM.print(";");
 		GSM.print(lastValid.time);
-	//	GSM.print("NA");
 		GSM.print(";");
 		GSM.print(lastValid.latitude);
 		GSM.print(";");
@@ -114,22 +106,20 @@ void udpOrange()
 		if(sim900.confirmAtCommand("OK\r\n",3000))
 		{
 			sendOK = false;
-			return;
+			return 2;
 		}
 		sendOK = true;
 		if(!sim900.confirmAtCommand(udpReply,UDPREPLY_TO))
 		{
-			udp = 0;
-			lastValid.updated &= ~(0x01);
 			sendOK = true;
-			if(udpInterval > 5)
-				sim900.gsmSleepMode(2);
-			return;
+			return 0;
 		}
+		else
+			return 1; //no response from server
 	}
 	else
 	{
 		sendOK = false;
-		return;
+		return 2;
 	}
 }
