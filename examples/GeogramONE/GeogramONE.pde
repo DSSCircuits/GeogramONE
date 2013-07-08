@@ -61,8 +61,19 @@ uint8_t speedHyst = 0;
 uint16_t speedLimit = 0;
 
 char udpReply[11];
+uint8_t smsPowerProfile = 0;
+uint8_t udpPowerProfile = 0;
+uint8_t smsPowerSpeed = 0;
+uint8_t udpPowerSpeed = 0;
+
+bool gsmPowerStatus = true;
 
 void goesWhere(char *, uint8_t replyOrStored = 0);
+
+uint8_t breach1Conf = 0;
+uint8_t breach2Conf = 0;
+uint8_t breach3Conf = 0;
+bool engMetric;
 
 void setup()
 {
@@ -93,9 +104,8 @@ void setup()
 	ggo.configureSpeed(&cmd3, &speedHyst, &speedLimit);
 	#endif
 	ggo.configureBreachParameters(&breachSpeed, &breachReps);
-	ggo.configureInterval(&smsInterval, &sleepTimeOn, &sleepTimeOff, &sleepTimeConfig, &udpInterval);
-	if(sleepTimeConfig & 0x02)
-		BMA250enableInterrupts();
+	ggo.configureSleepTime(&sleepTimeOn, &sleepTimeOff, &sleepTimeConfig);
+	BMA250enableInterrupts();
 	uint8_t swInt = EEPROM.read(IOSTATE0);
 	if(swInt == 0x05)
 		PCintPort::attachInterrupt(4, &d4Interrupt, RISING);
@@ -153,6 +163,7 @@ void loop()
 						sim900.powerDownGSM();
 						delay(2000);
 						sim900.init(9600);
+						gsmPowerStatus = true;
 					}
 				}
 			}
@@ -202,25 +213,28 @@ void loop()
 	}
 	if(charge & 0x02)
 		chargerStatus();
+	engMetric = EEPROM.read(ENGMETRIC);
 	#if USEFENCE1
 	if(fence1)
 	{
-		bool engMetric = EEPROM.read(ENGMETRIC);
-		static uint8_t breach1Conf = 0;
-		static char previousSeconds1 = lastValid.time[5];
+//		bool engMetric = EEPROM.read(ENGMETRIC);
+//		static uint8_t breach1Conf = 0;
+//		static char previousSeconds1 = lastValid.time[5];
 		if((fence1 == 1) && (lastValid.speed >= breachSpeed))
 		{
 			ggo.configureFence(1,&fence); 
 			if(!gps.geoFenceDistance(&lastValid, &fence, engMetric))
 			{
-				if(lastValid.time[5] != previousSeconds1)
+				if(lastValid.updated & 0x02)
+//				if(lastValid.time[5] != previousSeconds1)
 					breach1Conf++;
 				if(breach1Conf > breachReps)
 				{
 					fence1 = 2;
 					breach1Conf = 0;
 				}
-				previousSeconds1 = lastValid.time[5];
+//				previousSeconds1 = lastValid.time[5];
+				lastValid.updated &= ~(0x02); //28706
 			}
 			else
 				breach1Conf = 0;
@@ -244,22 +258,24 @@ void loop()
 	#if USEFENCE2
 	if(fence2)
 	{
-		bool engMetric = EEPROM.read(ENGMETRIC);
-		static uint8_t breach2Conf = 0;
-		static char previousSeconds2 = lastValid.time[5];
+//		bool engMetric = EEPROM.read(ENGMETRIC);
+//		static uint8_t breach2Conf = 0;
+//		static char previousSeconds2 = lastValid.time[5];
 		if((fence2 == 1) && (lastValid.speed >= breachSpeed))
 		{  
 			ggo.configureFence(2,&fence);
 			if(!gps.geoFenceDistance(&lastValid, &fence, engMetric))
 			{
-				if(lastValid.time[5] != previousSeconds2)
+				if(lastValid.updated & 0x04)
+//				if(lastValid.time[5] != previousSeconds2)
 					breach2Conf++;
 				if(breach2Conf > breachReps)
 				{
 					fence2 = 2;
 					breach2Conf = 0;
 				}
-				previousSeconds2 = lastValid.time[5];
+//				previousSeconds2 = lastValid.time[5];
+				lastValid.updated &= ~(0x04);
 			}
 			else
 				breach2Conf = 0;
@@ -283,22 +299,24 @@ void loop()
 	#if USEFENCE3
 	if(fence3)
 	{
-		bool engMetric = EEPROM.read(ENGMETRIC);
-		static uint8_t breach3Conf = 0;
-		static char previousSeconds3 = lastValid.time[5];
+//		bool engMetric = EEPROM.read(ENGMETRIC);
+//		static uint8_t breach3Conf = 0;
+//		static char previousSeconds3 = lastValid.time[5];
 		if((fence3 == 1) && (lastValid.speed >= breachSpeed))
 		{  
 			ggo.configureFence(3,&fence);
 			if(!gps.geoFenceDistance(&lastValid, &fence, engMetric))
 			{
-				if(lastValid.time[5] != previousSeconds3)
+				if(lastValid.updated & 0x08)
+//				if(lastValid.time[5] != previousSeconds3)
 					breach3Conf++;
 				if(breach3Conf > breachReps)
 				{
 					fence3 = 2;
 					breach3Conf = 0;
 				}
-				previousSeconds3 = lastValid.time[5];
+//				previousSeconds3 = lastValid.time[5];
+				lastValid.updated &= ~(0x08);
 			}
 			else
 				breach3Conf = 0;
@@ -349,6 +367,8 @@ void loop()
 		}
 		sim900.gsmSleepMode(2);
 	}
+	if(gsmPowerStatus)
+		sim900.initializeGSM();
 } 
 
 void printEEPROM(uint16_t eAddress)
