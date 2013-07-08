@@ -24,6 +24,7 @@ uint8_t udpOrange()
 						sim900.powerDownGSM();
 						delay(2000);
 						sim900.init(9600);
+						gsmPowerStatus = true;
 						resetGSM = millis();
 					}
 				}
