@@ -12,7 +12,8 @@ void command6()
 		case INOUT1: case INOUT2: case INOUT3: case BMA0X0F: case BMA0X10: case BMA0X11: 
 		case BMA0X16: case BMA0X17: case BMA0X19: case BMA0X1A: case BMA0X1B: case BMA0X20: case BMA0X21: 
 		case BMA0X25: case BMA0X26: case BMA0X27: case BMA0X28: case DATEFORMAT: case ENGMETRIC: case SLEEPTIMECONFIG:
-		case BREACHSPEED: case BREACHREPS: case SPEEDHYST:
+		case BREACHSPEED: case BREACHREPS: case SPEEDHYST: case UDPPOWERPROFILE: case SMSPOWERPROFILE:
+		case UDPSPEEDBAT: case UDPSPEEDPLUG: case SMSSPEEDBAT: case SMSSPEEDPLUG:
  			ptr = strtok_r(NULL,".",&str);
 			EEPROM.write(eepAdd,(uint8_t)atoi(ptr));
 			break;
@@ -27,8 +28,9 @@ void command6()
 			EEPROM_writeAnything(eepAdd,(uint16_t)(atoi(ptr)));
 			break;
 	//unsigned long 
-		case RADIUS1: case RADIUS2: case RADIUS3: case SMSSENDINTERVAL: case SLEEPTIMEON:
-		case SLEEPTIMEOFF: case UDPSENDINTERVAL:
+		case RADIUS1: case RADIUS2: case RADIUS3: case SLEEPTIMEON:
+		case SLEEPTIMEOFF: case SMSSENDINTERVALBAT: case SMSSENDINTERVALPLUG: 
+		case UDPSENDINTERVALBAT: case UDPSENDINTERVALPLUG: 
 			ptr = strtok_r(NULL,".",&str);
 			EEPROM_writeAnything(eepAdd,(unsigned long)(atol(ptr)));
 			break;
