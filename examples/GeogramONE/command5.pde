@@ -23,10 +23,10 @@ void sleepTimer()
 		onOffTimer = millis();
 		return;
 	}
-	if((sleepTimeConfig & 0x02) && move) //there was recent movement do not go to sleep
+	if((sleepTimeConfig & 0x02) && (move & 0x01)) //there was recent movement do not go to sleep
 	{
 		onOffTimer = millis();
-		move = 0; 
+		move &= ~(0x01); 
 		return;
 	}	
 	if((sleepTimeConfig & 0x01) && charge) //unit is plugged in and charging do not go to sleep
@@ -36,22 +36,26 @@ void sleepTimer()
 	}
 	gps.sleepGPS();
 	if(!(sleepTimeConfig & 0x04))
+	{
 		sim900.powerDownGSM();
+		gsmPowerStatus = false;
+	}
 	onOffTimer = millis();
 	while((millis() - onOffTimer) < sleepTimeOff)
 	{
 		if((sleepTimeConfig & 0x04) && call)
 			break;
-		if((sleepTimeConfig & 0x02) && move)
+		if((sleepTimeConfig & 0x02) && (move & 0x01))
 			break;
 		if((sleepTimeConfig & 0x01) && charge)
 			break;
 	}
 	gps.wakeUpGPS();
 	if(!(sleepTimeConfig & 0x04))
+	{
 		sim900.init(9600);
-	if(!(sleepTimeConfig & 0x02))
-		BMA250disableInterrupts();
+		gsmPowerStatus = true;
+	}
 	onOffTimer = millis();
 }
 		
