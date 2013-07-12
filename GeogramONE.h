@@ -22,7 +22,6 @@
 #define GEODATAFORMAT1			48
 #define GEODATAFORMAT2			50
 #define BATTERYLOWLEVEL    		52
-#define SMSSENDINTERVAL			53
 #define IOSTATE0				57
 #define IOSTATE1				58
 #define IOSTATE2				59
@@ -69,7 +68,16 @@
 #define BMA0X26					135
 #define BMA0X27					136
 #define BMA0X28					137
-#define UDPSENDINTERVAL			138
+#define UDPSENDINTERVALBAT		138
+#define UDPSENDINTERVALPLUG		142
+#define UDPPOWERPROFILE			146
+#define UDPSPEEDBAT				147
+#define UDPSPEEDPLUG			148
+#define SMSSENDINTERVALBAT		149
+#define SMSSENDINTERVALPLUG		153
+#define SMSPOWERPROFILE			157
+#define SMSSPEEDBAT				158
+#define SMSSPEEDPLUG			159
 #define MOTIONMSG				200
 #define BATTERYMSG				225
 #define FENCE1MSG				250
@@ -98,7 +106,6 @@
 #define PG_INT             		14
 #define BMA_ADD    	   (uint8_t)0x18
 #define FUELGAUGE          		0x36 //Fuel gauge I2C address
-#define FUELGAUGEALERT     		0x11 //set to 15% battery capacity
 #define FUELGAUGEPIN       		0x07 //Fuel gauge interrupt pin
 
 
@@ -112,7 +119,7 @@ class GeogramONE
 		void configureFence(uint8_t , geoFence *);
 		void configureBreachParameters(uint8_t *, uint8_t *);
 		void getFenceActive(uint8_t fenceNumber, uint8_t *fenceVar);
-		void configureInterval(uint32_t *, uint32_t *, uint32_t *, uint8_t *, uint32_t *);
+		void configureSleepTime(uint32_t *, uint32_t *, uint8_t *);
 		void configureSpeed(uint8_t *, uint8_t *, uint16_t *);
 	private:
 };

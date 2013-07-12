@@ -285,7 +285,7 @@ uint8_t PA6C::geoFenceDistance(goCoord *last, geoFence *fence, bool engMetric) /
 	float ToRad = PI / 180.0;
 	float R = 6378.1; // radius earth in Km
 	float lLat = ((uint16_t)(atoi(last->latitude)/100)) + (atof(last->latitude + 2) / 60.0);
-	float lLon = ((uint16_t)(atoi(last->longitude)/100)) + (atof(last->longitude + 2) / 60.0);
+	float lLon = ((uint16_t)(atoi(last->longitude)/100)) + (atof(last->longitude + 3) / 60.0);
 	if(last->ns == 'S')
 		lLat *= -1.0;
 	if(last->ew == 'W')

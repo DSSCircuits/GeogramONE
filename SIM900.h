@@ -63,13 +63,13 @@ class SIM900
 		uint8_t gsmSleepMode(int);
 		uint8_t signalQuality();
 		uint8_t powerDownGSM();
+		void initializeGSM();
 		uint8_t checkNetworkRegistration();
 		uint8_t getGeo(geoSmsData *, char *);
 		uint8_t confirmAtCommand(char *, unsigned long);
 		uint8_t cipStatus();
 	private:
 		uint8_t powerOnGSM();
-		void initializeGSM();
 		uint8_t callReady();
 		AltSoftSerial *GSM;
 };

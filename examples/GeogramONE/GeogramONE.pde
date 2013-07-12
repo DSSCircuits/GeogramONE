@@ -40,12 +40,15 @@ uint8_t udp = 0x00;
 
 //#if USEFENCE1
 uint8_t fence1 = 0;
+uint8_t breach1Conf = 0;
 //#endif
 //#if USEFENCE2
 uint8_t fence2 = 0;
+uint8_t breach2Conf = 0;
 //#endif
 //#if USEFENCE3
 uint8_t fence3 = 0;
+uint8_t breach3Conf = 0;
 //#endif
 
 uint8_t breachSpeed = 0;
@@ -69,10 +72,6 @@ uint8_t udpPowerSpeed = 0;
 bool gsmPowerStatus = true;
 
 void goesWhere(char *, uint8_t replyOrStored = 0);
-
-uint8_t breach1Conf = 0;
-uint8_t breach2Conf = 0;
-uint8_t breach3Conf = 0;
 bool engMetric;
 
 void setup()
@@ -217,24 +216,19 @@ void loop()
 	#if USEFENCE1
 	if(fence1)
 	{
-//		bool engMetric = EEPROM.read(ENGMETRIC);
-//		static uint8_t breach1Conf = 0;
-//		static char previousSeconds1 = lastValid.time[5];
 		if((fence1 == 1) && (lastValid.speed >= breachSpeed))
 		{
 			ggo.configureFence(1,&fence); 
 			if(!gps.geoFenceDistance(&lastValid, &fence, engMetric))
 			{
 				if(lastValid.updated & 0x02)
-//				if(lastValid.time[5] != previousSeconds1)
 					breach1Conf++;
 				if(breach1Conf > breachReps)
 				{
 					fence1 = 2;
 					breach1Conf = 0;
 				}
-//				previousSeconds1 = lastValid.time[5];
-				lastValid.updated &= ~(0x02); //28706
+				lastValid.updated &= ~(0x02); 
 			}
 			else
 				breach1Conf = 0;
@@ -258,23 +252,18 @@ void loop()
 	#if USEFENCE2
 	if(fence2)
 	{
-//		bool engMetric = EEPROM.read(ENGMETRIC);
-//		static uint8_t breach2Conf = 0;
-//		static char previousSeconds2 = lastValid.time[5];
 		if((fence2 == 1) && (lastValid.speed >= breachSpeed))
 		{  
 			ggo.configureFence(2,&fence);
 			if(!gps.geoFenceDistance(&lastValid, &fence, engMetric))
 			{
 				if(lastValid.updated & 0x04)
-//				if(lastValid.time[5] != previousSeconds2)
 					breach2Conf++;
 				if(breach2Conf > breachReps)
 				{
 					fence2 = 2;
 					breach2Conf = 0;
 				}
-//				previousSeconds2 = lastValid.time[5];
 				lastValid.updated &= ~(0x04);
 			}
 			else
@@ -299,23 +288,18 @@ void loop()
 	#if USEFENCE3
 	if(fence3)
 	{
-//		bool engMetric = EEPROM.read(ENGMETRIC);
-//		static uint8_t breach3Conf = 0;
-//		static char previousSeconds3 = lastValid.time[5];
 		if((fence3 == 1) && (lastValid.speed >= breachSpeed))
 		{  
 			ggo.configureFence(3,&fence);
 			if(!gps.geoFenceDistance(&lastValid, &fence, engMetric))
 			{
 				if(lastValid.updated & 0x08)
-//				if(lastValid.time[5] != previousSeconds3)
 					breach3Conf++;
 				if(breach3Conf > breachReps)
 				{
 					fence3 = 2;
 					breach3Conf = 0;
 				}
-//				previousSeconds3 = lastValid.time[5];
 				lastValid.updated &= ~(0x08);
 			}
 			else

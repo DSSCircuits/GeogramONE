@@ -28,21 +28,21 @@ void chargerStatus()
 {
 	delay(2);
 	charge = digitalRead(PG_INT);
+	smsPowerProfile = EEPROM.read(SMSPOWERPROFILE);
+	udpPowerProfile = EEPROM.read(UDPPOWERPROFILE);
 	if(charge)
 	{
 		smsInterval = EEPROM.read(SMSSENDINTERVALPLUG);
 		udpInterval = EEPROM.read(UDPSENDINTERVALPLUG);
-		smsPowerProfile = EEPROM.read(SMSPOWERPROFILE);
-		udpPowerProfile = EEPROM.read(UDPPOWERPROFILE);
 		smsPowerSpeed = EEPROM.read(SMSSPEEDPLUG);
 		udpPowerSpeed = EEPROM.read(UDPSPEEDPLUG);
 	}
 	else
 	{
+		smsPowerProfile >>= 4;
+		udpPowerProfile >>= 4;
 		smsInterval = EEPROM.read(SMSSENDINTERVALBAT);
 		udpInterval = EEPROM.read(UDPSENDINTERVALBAT);
-		smsPowerProfile = EEPROM.read(SMSPOWERPROFILE) >> 4;
-		udpPowerProfile = EEPROM.read(UDPPOWERPROFILE) >> 4;
 		smsPowerSpeed = EEPROM.read(SMSSPEEDBAT);
 		udpPowerSpeed = EEPROM.read(UDPSPEEDBAT);
 	}

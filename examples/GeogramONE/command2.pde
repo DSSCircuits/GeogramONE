@@ -19,6 +19,7 @@ void command2()
 		{
 			uint8_t offset = 0;
 			unsigned long cmdLong;
+			long latLonSigned;
 			if(cmd == 2)
 			{
 				offset = 14;
@@ -38,8 +39,14 @@ void command2()
 			ptr = strtok_r(NULL,".",&str);
 			cmdLong = atol(ptr); // fence radius
 			EEPROM_writeAnything(RADIUS1 + offset, cmdLong);
-			EEPROM_writeAnything(LATITUDE1 + offset, lastValid.latitude);
-			EEPROM_writeAnything(LONGITUDE1 + offset, lastValid.longitude);
+			latLonSigned = (long)(atof(lastValid.latitude) *10000);
+			if(lastValid.ns == 'S')
+				latLonSigned *= -1;
+			EEPROM_writeAnything(LATITUDE1 + offset, latLonSigned);
+			latLonSigned = (long)(atof(lastValid.longitude) *10000);
+			if(lastValid.ew == 'W')
+				latLonSigned *= -1;
+			EEPROM_writeAnything(LONGITUDE1 + offset, latLonSigned);
 			}
 			break;
 		case 10 :
