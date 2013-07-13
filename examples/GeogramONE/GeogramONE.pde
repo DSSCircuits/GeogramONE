@@ -17,6 +17,8 @@ under CC-SA v3 license.
 #define USESPEED			1  //set to zero to free up code space if option is not needed
 #define USEMOTION			1  //set to zero to free up code space if option is not needed
 
+#define USEPOWERSWITCH		0
+
 GeogramONE ggo;
 AltSoftSerial GSM;
 SIM900 sim900(&GSM);
@@ -32,6 +34,10 @@ volatile uint8_t battery = 0;
 volatile uint8_t charge = 0x02; // force a read of the charger cable
 volatile uint8_t d4Switch = 0x00;
 volatile uint8_t d10Switch = 0x00;
+
+#if USEPOWERSWITCH
+volatile uint8_t d11PowerSwitch;
+#endif
 
 uint8_t cmd0 = 0;
 uint8_t cmd1 = 0;
@@ -115,6 +121,11 @@ void setup()
 		PCintPort::attachInterrupt(10, &d10Interrupt, RISING);
 	if(swInt == 0x06)
 		PCintPort::attachInterrupt(10, &d10Interrupt, FALLING);
+	#if USEPOWERSWITCH
+	pinMode(11,INPUT);
+	digitalWrite(11,HIGH);
+	PCintPort::attachInterrupt(11, &d11Interrupt, FALLING);
+	#endif
 }
 
 void loop()
@@ -351,6 +362,10 @@ void loop()
 		}
 		sim900.gsmSleepMode(2);
 	}
+	#if USEPOWERSWITCH
+	if(d11PowerSwitch)
+		onOffSwitch();
+	#endif
 	if(gsmPowerStatus)
 		sim900.initializeGSM();
 } 
@@ -380,3 +395,52 @@ void goesWhere(char *smsAddress, uint8_t replyOrStored)
 				break;
 	}
 }
+
+#if USEPOWERSWITCH
+void onOffSwitch()
+{
+	delay(3000);
+	if(digitalRead(11))
+	{
+		d11PowerSwitch = 0;
+		return;
+	}
+	BMA250disableInterrupts();
+	sim900.powerDownGSM();
+	gps.sleepGPS();
+	pinMode(9,INPUT);  //shut off NewSoftSerial Tx pin 
+	digitalWrite(9,LOW); //set to high impedance
+	digitalWrite(8,LOW); // set NewSoftSerial Rx pin to high impedance
+	set_sleep_mode (SLEEP_MODE_PWR_DOWN);
+	sleep_enable();	
+	MCUCR = _BV (BODS) | _BV (BODSE);
+	MCUCR = _BV (BODS);
+	sleep_cpu ();
+  
+/*********ATMEGA is sleeping at this point***************/  
+	sleep_disable();
+	while(1)
+	{
+		delay(3000);
+		if(!digitalRead(11))
+			break;
+		set_sleep_mode (SLEEP_MODE_PWR_DOWN);
+		sleep_enable();	
+		MCUCR = _BV (BODS) | _BV (BODSE);
+		MCUCR = _BV (BODS);
+		sleep_cpu ();
+	  
+	/*********ATMEGA is sleeping at this point***************/  
+		sleep_disable();
+	}
+	BMA250enableInterrupts();
+	pinMode(9,OUTPUT); //restore NewSoftSerial settings
+	digitalWrite(9,HIGH);
+	digitalWrite(8,HIGH);
+	gps.wakeUpGPS();
+	sim900.init(9600);
+	gsmPowerStatus = true;
+	d11PowerSwitch = 0;
+}
+
+#endif

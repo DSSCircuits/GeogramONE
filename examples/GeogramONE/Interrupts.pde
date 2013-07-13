@@ -58,6 +58,13 @@ void d10Interrupt()
 	d10Switch = 0x01;
 }
 
+#if USEPOWERSWITCH
+void d11Interrupt()
+{
+	d11PowerSwitch = 0x01;
+}
+#endif
+
 /*int freeRam () 
 {
 	extern int __heap_start, *__brkval; 
