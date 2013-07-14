@@ -10,21 +10,21 @@ with GPS location, and Sim card identity periodically. If you run this code
 unaltered, you will send your personal information to Stevens webserver. 
 
 To learn more about these changes please visit my website. 
-http://www.abluestar.com
+http://www.abluestar.com/blog/geogramone-gps-tracker-to-google-maps/
 
 Notes: 
  * GSM modem manual (Sim900): http://garden.seeedstudio.com/images/a/a8/SIM900_AT_Command_Manual_V1.03.pdf
 *****************************************************************************/
-
+/*
 #include <AltSoftSerial.h>
 #include <PinChangeInt.h>
 #include "GeogramONE.h"
 #include <EEPROM.h>
 #include <I2C.h>
-
+*/
 // You should change this to your own server. but you can use this setting 
 // for a demo. 
-#define SETTING_WEBSERVER_URL       "http://www.abluestar.com/temp/gps/"
+#define SETTING_WEBSERVER_URL       "http://www.abluestar.com/utilities/gps/"
 
 // Need to put your provider's APN here
 #define SETTING_GSM_APN             "internet.com"
@@ -51,16 +51,9 @@ Notes:
  */ 
 
 
-#define TIMER_POLL_WITH_DATA        (1000*60*1)
-#define TIMER_POLL_HEART_BEAT       (1000*60*30)
+#define TIMER_POLL_WITH_DATA        (1000*60*1)   // 1 mins 
+#define TIMER_POLL_HEART_BEAT       (1000*60*30)  // 30 mins 
 #define ENABLE_DEBUG_MESSAGES       false 
-
-GeogramONE      ggo;
-AltSoftSerial   GSM;
-SIM900          sim900(&GSM);
-PA6C            gps(&Serial); 
-goCoord         lastValid;
-
 
 #define MAX_PHONENUMBER_SIZE 25 
 char phoneNumber[MAX_PHONENUMBER_SIZE];
@@ -121,32 +114,31 @@ void httpPost()
     }
 
     // Update the timer.
-    miniTimer = millis() ; 
-       
+    miniTimer = millis() ;        
     
     // Wake up the modem. 
     // DebugPrint( "Waiting up the GSM modem"); 
-	sim900.gsmSleepMode(0);
+    sim900.gsmSleepMode(0);
     
-	GSM.println("AT+SAPBR=3,1,\"Contype\",\"GPRS\"");
-	sim900.confirmAtCommand("OK",5000);
+    GSM.println("AT+SAPBR=3,1,\"Contype\",\"GPRS\"");
+    sim900.confirmAtCommand("OK",5000);
 	
-	GSM.print("AT+SAPBR=3,1,\"APN\",\"");
+    GSM.print("AT+SAPBR=3,1,\"APN\",\"");
     GSM.print( SETTING_GSM_APN );
     GSM.println("\""); 
-	sim900.confirmAtCommand("OK",5000);
+    sim900.confirmAtCommand("OK",5000);
 	
-	GSM.println("AT+SAPBR=1,1");
-	sim900.confirmAtCommand("OK",5000);// Tries to connect GPRS 
+    GSM.println("AT+SAPBR=1,1");
+    sim900.confirmAtCommand("OK",5000);// Tries to connect GPRS 
 	
-	GSM.println("AT+HTTPINIT");
-	sim900.confirmAtCommand("OK",5000);
+    GSM.println("AT+HTTPINIT");
+    sim900.confirmAtCommand("OK",5000);
 	
-	GSM.println("AT+HTTPPARA=\"CID\",1");
-	sim900.confirmAtCommand("OK",5000);
+    GSM.println("AT+HTTPPARA=\"CID\",1");
+    sim900.confirmAtCommand("OK",5000);
 	
     //web address to send data to
-	GSM.print("AT+HTTPPARA=\"URL\",\"");
+    GSM.print("AT+HTTPPARA=\"URL\",\"");
     GSM.print(SETTING_WEBSERVER_URL);
     GSM.print("?act=ping&id="); 
     GSM.print(phoneNumber); 
@@ -205,18 +197,6 @@ void httpPost()
           GSM.print("-" );  
           GSM.print(lastValid.time +4 );  
           */
-          // Raw
-          /*
-          GSM.print("&raw1=");
-          for( int i = 0 ; i < 10 ; i++ ) {
-            GSM.print(lastValid.latitude[i], HEX);
-          }
-          GSM.print("&raw2=");
-          for( int i = 0 ; i < 11 ; i++ ) {
-            GSM.print(lastValid.longitude[i], HEX);
-          }
-          */
-          
     } else {
         GSM.print("&err=NoSignalLock");
     }    
@@ -231,7 +211,7 @@ void httpPost()
     // All done send the message. 
     GSM.println("\"");    
 	sim900.confirmAtCommand("OK",5000);
-    
+  
 	GSM.println("AT+HTTPDATA=2,10000"); 
 	sim900.confirmAtCommand("DOWNLOAD",5000);
 	GSM.println("0"); // ToDo: But prameters here instead of the url. 
@@ -294,14 +274,7 @@ uint8_t GetPhoneNumber() {
     return 0; 
 }
 
-void setup() {
-	ggo.init();
-	gps.init(115200);
-	sim900.init(9600);
-        
-	MAX17043init(7, 500);
-	BMA250init(3, 500);
-    
+void setupHTTP() {
     // Get the phone number from the simcard
     GetPhoneNumber(); 
     
@@ -309,7 +282,4 @@ void setup() {
     miniTimer = 0 ; 
 }
 
-void loop() {
-    // Ping the webserver. 
-    httpPost() ; 
-} 
+

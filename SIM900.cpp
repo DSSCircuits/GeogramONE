@@ -62,7 +62,6 @@ uint8_t SIM900::confirmAtCommand(char *searchString, unsigned long timeOut)
 	unsigned long tOut = millis();
 	while((millis() - tOut) <= timeOut)
 	{
-        GSM->flush();
 		if (GSM->available())
 		{
 			atRxBuffer[index] = GSM->read();
@@ -122,7 +121,12 @@ uint8_t SIM900::powerDownGSM()
 
 void SIM900::initializeGSM()
 {
-	if(!powerOnGSM())
+	uint8_t powerOK = powerOnGSM();
+	if(powerOK == 2) //GSM was powered on already
+		return;
+	if(!powerOK)
+	{
+//	if(!powerOnGSM())
 		callReady();
 	GSM->println("AT+CMEE=1");
 	confirmAtCommand("OK",CMEE_TO);
@@ -132,6 +136,7 @@ void SIM900::initializeGSM()
 	confirmAtCommand("OK",CMGF_TO);
 	GSM->println("AT+CNMI=0,0,0,0,0");
 	confirmAtCommand("OK",CNMI_TO);
+	}
 }
 
 /*************************************************************	

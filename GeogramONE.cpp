@@ -84,10 +84,10 @@ void GeogramONE::configureFence(uint8_t fenceNumber, geoFence *fence)
 	return ;
 }
 
-void GeogramONE::configureBreachParameters(uint8_t *breachSpeed, uint8_t *breachReps)
+void GeogramONE::configureBreachParameters(uint8_t *breachS, uint8_t *breachR)
 {
-	EEPROM_readAnything(BREACHSPEED, breachSpeed);
-	EEPROM_readAnything(BREACHREPS, breachReps);
+	*breachS = EEPROM.read(BREACHSPEED);
+	*breachR = EEPROM.read(BREACHREPS);
 }
 
 
@@ -102,20 +102,18 @@ void GeogramONE::getFenceActive(uint8_t fenceNumber, uint8_t *fenceVar)
 	return ;
 }
 
-void GeogramONE::configureInterval(uint32_t *smsInterval, uint32_t *sleepTimeOn, uint32_t *sleepTimeOff, uint8_t *sleepTimeConfig, uint32_t *gprsInterval)
+void GeogramONE::configureSleepTime(uint32_t *sleepTimeOn, uint32_t *sleepTimeOff, uint8_t *sleepTimeConfig)
 {
-	EEPROM_readAnything(SMSSENDINTERVAL,*smsInterval);
 	EEPROM_readAnything(SLEEPTIMEON,*sleepTimeOn);
 	EEPROM_readAnything(SLEEPTIMEOFF,*sleepTimeOff);
 	EEPROM_readAnything(SLEEPTIMECONFIG,*sleepTimeConfig);
-	EEPROM_readAnything(UDPSENDINTERVAL,*gprsInterval);
 	return;
 }
 
 void GeogramONE::configureSpeed(uint8_t *cmd3, uint8_t *speedH, uint16_t *speedL)
 {
 	EEPROM_readAnything(SPEEDLIMIT,*speedL);
-	EEPROM_readAnything(SPEEDHYST,*speedH);
+	*speedH = EEPROM.read(SPEEDHYST);
 	if(*speedL)
 		*cmd3 = 0x02;
 	else
