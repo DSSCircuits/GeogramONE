@@ -83,3 +83,4 @@ void command2()
 		ggo.getFenceActive(3, &fence3);
 }
 
+
