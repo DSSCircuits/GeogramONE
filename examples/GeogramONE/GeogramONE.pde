@@ -17,7 +17,8 @@ under CC-SA v3 license.
 #define USESPEED			1  //set to zero to free up code space if option is not needed
 #define USEMOTION			1  //set to zero to free up code space if option is not needed
 
-#define USEPOWERSWITCH		0
+#define USEPOWERSWITCH		1
+
 
 GeogramONE ggo;
 AltSoftSerial GSM;
@@ -80,11 +81,14 @@ bool gsmPowerStatus = true;
 void goesWhere(char *, uint8_t replyOrStored = 0);
 bool engMetric;
 
+uint32_t apn;
+
+
 void setup()
 {
 	ggo.init();
 	gps.init(115200);
-	sim900.init(9600);
+	sim900.init();
 	MAX17043init(7, 500);
 	BMA250init(3, 500);
 	attachInterrupt(0, ringIndicator, FALLING);
@@ -96,6 +100,7 @@ void setup()
 	if(call == 0xFF)
 		call = 0;
 	battery = MAX17043getAlertFlag();
+	EEPROM_readAnything(APN,apn);
 	#if USEFENCE1
 	ggo.getFenceActive(1, &fence1);
 	#endif
@@ -135,6 +140,7 @@ void loop()
 		int8_t tZ = EEPROM.read(TIMEZONE);
 		bool eM = EEPROM.read(ENGMETRIC);
 		gps.updateRegionalSettings(tZ, eM, &lastValid);
+		EEPROM_readAnything(APN,apn);
 	}
 	if(call)
 	{
@@ -169,10 +175,9 @@ void loop()
 						command8();
 					else if(smsData.smsCmdNum == 255)
 					{
+						BMA250configureMotion();
 						sim900.gsmSleepMode(0);
-						sim900.powerDownGSM();
-						delay(2000);
-						sim900.init(9600);
+						sim900.rebootGSM();
 						gsmPowerStatus = true;
 					}
 				}
@@ -209,8 +214,8 @@ void loop()
 	if(battery)
 	{
 		sim900.gsmSleepMode(0);
-		goesWhere(smsData.smsNumber);
-		if(!sim900.prepareSMS(smsData.smsNumber))
+		goesWhere(smsData.smsNumber,1);
+		if(!sim900.prepareSMS(smsData.smsNumber,apn))
 		{
 			printEEPROM(BATTERYMSG);
 			if(!sim900.sendSMS())
@@ -249,8 +254,8 @@ void loop()
 		if(fence1 == 2)
 		{
 			sim900.gsmSleepMode(0);
-			goesWhere(smsData.smsNumber);
-			if(!sim900.prepareSMS(smsData.smsNumber))
+			goesWhere(smsData.smsNumber,1);
+			if(!sim900.prepareSMS(smsData.smsNumber,apn))
 			{
 				printEEPROM(FENCE1MSG);
 				if(!sim900.sendSMS())
@@ -285,8 +290,8 @@ void loop()
 		if(fence2 == 2)
 		{  
 			sim900.gsmSleepMode(0);
-			goesWhere(smsData.smsNumber);
-			if(!sim900.prepareSMS(smsData.smsNumber))
+			goesWhere(smsData.smsNumber,1);
+			if(!sim900.prepareSMS(smsData.smsNumber,apn))
 			{
 				printEEPROM(FENCE2MSG);
 				if(!sim900.sendSMS())
@@ -321,8 +326,8 @@ void loop()
 		if(fence3 == 2)
 		{  
 			sim900.gsmSleepMode(0);
-			goesWhere(smsData.smsNumber);
-			if(!sim900.prepareSMS(smsData.smsNumber))
+			goesWhere(smsData.smsNumber,1);
+			if(!sim900.prepareSMS(smsData.smsNumber,apn))
 			{
 				printEEPROM(FENCE3MSG);
 				if(!sim900.sendSMS())
@@ -336,13 +341,13 @@ void loop()
 		smsTimerMenu();
 	if(udpInterval)
 		udpTimerMenu();
-	if(sleepTimeOn && sleepTimeOff)
+	if(sleepTimeOn && (sleepTimeOff || (sleepTimeConfig & 0x08)))
 		sleepTimer();
 	if(d4Switch)
 	{
 		sim900.gsmSleepMode(0);
-		goesWhere(smsData.smsNumber);
-		if(!sim900.prepareSMS(smsData.smsNumber))
+		goesWhere(smsData.smsNumber,1);
+		if(!sim900.prepareSMS(smsData.smsNumber,apn))
 		{
 			printEEPROM(D4MSG);
 			if(!sim900.sendSMS())
@@ -353,8 +358,8 @@ void loop()
 	if(d10Switch)
 	{
 		sim900.gsmSleepMode(0);
-		goesWhere(smsData.smsNumber);
-		if(!sim900.prepareSMS(smsData.smsNumber))
+		goesWhere(smsData.smsNumber,1);
+		if(!sim900.prepareSMS(smsData.smsNumber,apn))
 		{
 			printEEPROM(D10MSG);
 			if(!sim900.sendSMS())
@@ -385,16 +390,17 @@ void printEEPROM(uint16_t eAddress)
 
 void goesWhere(char *smsAddress, uint8_t replyOrStored)
 {
-	if(!replyOrStored)
+	if(replyOrStored == 3) 
 		EEPROM_readAnything(RETURNADDCONFIG,replyOrStored);
-	if((replyOrStored == 2) || ((replyOrStored == 3) && (smsAddress[0] == NULL)))
-	for(uint8_t l = 0; l < 39; l++)
-	{
-			smsAddress[l] = EEPROM.read(l + SMSADDRESS);
-			if(smsAddress[l] == NULL)
-				break;
-	}
+	if((replyOrStored == 1))
+		for(uint8_t l = 0; l < 39; l++)
+		{
+				smsAddress[l] = EEPROM.read(l + SMSADDRESS);
+				if(smsAddress[l] == NULL)
+					break;
+		}
 }
+
 
 #if USEPOWERSWITCH
 void onOffSwitch()
@@ -405,40 +411,24 @@ void onOffSwitch()
 		d11PowerSwitch = 0;
 		return;
 	}
-	BMA250disableInterrupts();
+	BMA250sleepMode(0x80);
+	MAX17043sleep(false);
 	sim900.powerDownGSM();
 	gps.sleepGPS();
-	pinMode(9,INPUT);  //shut off NewSoftSerial Tx pin 
-	digitalWrite(9,LOW); //set to high impedance
-	digitalWrite(8,LOW); // set NewSoftSerial Rx pin to high impedance
-	set_sleep_mode (SLEEP_MODE_PWR_DOWN);
-	sleep_enable();	
-	MCUCR = _BV (BODS) | _BV (BODSE);
-	MCUCR = _BV (BODS);
-	sleep_cpu ();
-  
-/*********ATMEGA is sleeping at this point***************/  
-	sleep_disable();
+	BMA250disableInterrupts();
+	ggo.goToSleep(SLEEP_MODE_PWR_DOWN, false, true);
 	while(1)
 	{
 		delay(3000);
 		if(!digitalRead(11))
 			break;
-		set_sleep_mode (SLEEP_MODE_PWR_DOWN);
-		sleep_enable();	
-		MCUCR = _BV (BODS) | _BV (BODSE);
-		MCUCR = _BV (BODS);
-		sleep_cpu ();
-	  
-	/*********ATMEGA is sleeping at this point***************/  
-		sleep_disable();
+		ggo.goToSleep(SLEEP_MODE_PWR_DOWN, false, true);
 	}
+	MAX17043sleep(true);
+	BMA250sleepMode(0x00);
 	BMA250enableInterrupts();
-	pinMode(9,OUTPUT); //restore NewSoftSerial settings
-	digitalWrite(9,HIGH);
-	digitalWrite(8,HIGH);
 	gps.wakeUpGPS();
-	sim900.init(9600);
+	sim900.initializeGSM();
 	gsmPowerStatus = true;
 	d11PowerSwitch = 0;
 }
