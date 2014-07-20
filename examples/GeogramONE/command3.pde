@@ -18,8 +18,8 @@ void command3() //speed monitoring mode
 		cmd3 = 0x03;
 	if(cmd3 == 3)
 	{
-		goesWhere(smsData.smsNumber);
-		if(sim900.prepareSMS(smsData.smsNumber))
+		goesWhere(smsData.smsNumber,1);
+		if(sim900.prepareSMS(smsData.smsNumber,apn))
 			return;
 		printEEPROM(SPEEDMSG);
 		GSM.println();
@@ -39,8 +39,8 @@ void command3() //speed monitoring mode
 	}
 	if(cmd3 == 5)
 	{
-		goesWhere(smsData.smsNumber);
-		if(sim900.prepareSMS(smsData.smsNumber))
+		goesWhere(smsData.smsNumber,1);
+		if(sim900.prepareSMS(smsData.smsNumber,apn))
 			return;
 		printEEPROM(MAXSPEEDMSG);
 		GSM.println(maxSpeed);
