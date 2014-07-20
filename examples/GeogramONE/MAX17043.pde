@@ -81,18 +81,21 @@ uint16_t MAX17043getBatteryVoltage()
 	return(batteryVoltage >>= 4);
 }
 
-uint8_t MAX17043sleepFuelGauge()
+void MAX17043sleep(bool sleepWake)
 {
 	uint8_t configRegister[2] = {0,0};
 	I2c.read(FUELGAUGE,0x0C,2,configRegister);
-	configRegister[1] |= 0x80;
-	return(I2c.write(FUELGAUGE,0x0C,configRegister,2));
+	if(!sleepWake)
+		configRegister[1] |= 0x80;
+	else
+		configRegister[1] &= 0x7F;
+	I2c.write(FUELGAUGE,0x0C,configRegister,2);
 }
 
-uint8_t MAX17043wakeFuelGauge()
+/*void MAX17043wakeFuelGauge()
 {
 	uint8_t configRegister[2] = {0,0};
 	I2c.read(FUELGAUGE,0x0C,2,configRegister);
 	configRegister[1] &= 0x7F;
 	return(I2c.write(FUELGAUGE,0x0C,configRegister,2));
-}
+}*/
