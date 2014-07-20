@@ -11,10 +11,9 @@ uint8_t SIM900::init(unsigned long baudRate)
 	pinMode(GSMSTATUS,INPUT);
 	pinMode(GSMSWITCH,OUTPUT);
 	digitalWrite(GSMSWITCH,LOW);
-	GSM->begin(baudRate);
-//	totalMsg = 0;
+	GSM->begin(BAUD_RATE);
 	initializeGSM();
-	gsmSleepMode(2);
+//	gsmSleepMode(2);
 }
 
 /*************************************************************	
@@ -118,6 +117,14 @@ uint8_t SIM900::powerDownGSM()
 	return 0;
 }
 
+void SIM900::rebootGSM()
+{
+	gsmSleepMode(0);
+	powerDownGSM();
+	delay(2000);
+	initializeGSM();
+}
+
 
 void SIM900::initializeGSM()
 {
@@ -126,16 +133,17 @@ void SIM900::initializeGSM()
 		return;
 	if(!powerOK)
 	{
-//	if(!powerOnGSM())
 		callReady();
-	GSM->println("AT+CMEE=1");
-	confirmAtCommand("OK",CMEE_TO);
-	GSM->println("AT+IPR=9600");
-	confirmAtCommand("OK",IPR_TO);
-	GSM->println("AT+CMGF=1");
-	confirmAtCommand("OK",CMGF_TO);
-	GSM->println("AT+CNMI=0,0,0,0,0");
-	confirmAtCommand("OK",CNMI_TO);
+		GSM->println("AT+CMEE=1");
+		confirmAtCommand("OK",CMEE_TO);
+		GSM->print("AT+IPR=");
+		GSM->println(BAUD_RATE,DEC);
+		confirmAtCommand("OK",IPR_TO);
+		GSM->println("AT+CMGF=1");
+		confirmAtCommand("OK",CMGF_TO);
+		GSM->println("AT+CNMI=0,0,0,0,0");
+		confirmAtCommand("OK",CNMI_TO);
+		gsmSleepMode(2);
 	}
 }
 
@@ -145,7 +153,7 @@ RETURN:
 	0		GSM is registered to the network
 	1		GSM is not registered to the network
 **************************************************************/
-uint8_t SIM900::checkNetworkRegistration()
+bool SIM900::checkNetworkRegistration()
 {
 	GSM->println("AT+CREG?");
 	confirmAtCommand("OK",CREG_TO);
@@ -217,16 +225,28 @@ RETURN:
 	0				command successful
 	1				ERROR executing command, SMS aborted
 **************************************************************/
-bool SIM900::prepareSMS(char *smsAddress)
+bool SIM900::prepareSMS(char *smsAddress, uint32_t apn)
 {
+	bool isEmail = false;
+	if(strlen(smsAddress) < 3)
+		return true;  //address field is blank
+	if(strstr(smsAddress,"@") != NULL)
+		isEmail = true;
 	GSM->print("AT+CMGS=\"");
-	GSM->print(smsAddress);
+	if(isEmail)
+		GSM->print(apn);
+	else
+		GSM->print(smsAddress);
 	GSM->println("\"");
 	if(!confirmAtCommand(">",CMGS1_TO))
-		return 0;
+	{
+		if(isEmail)
+			GSM->println(smsAddress);
+		return false;
+	}
 	GSM->println((char)0x1B); //do not send message
 	delay(500);
-	return 1;  //There was an error waiting for the > 
+	return true;  //There was an error waiting for the > 
 }
 
 /*************************************************************	
@@ -300,6 +320,11 @@ uint8_t SIM900::getGeo(geoSmsData *retSms, char *pwd)
 		atRxBuffer[strlen(atRxBuffer) - 1] = '\0';
 		strcpy(retSms->smsNumber,atRxBuffer);
 		confirmAtCommand("\r\n",100);
+		if(!strstr(retSms->smsNumber,"+") != NULL)
+		{
+			confirmAtCommand("/",500);
+			confirmAtCommand("/",500);
+		}
 		confirmAtCommand(DELIMITER,100);
 		atRxBuffer[strlen(atRxBuffer) - 1] = '\0';
 		if(strncmp((atRxBuffer + (strlen(atRxBuffer)-4)),pwd,4) != 0) 
@@ -389,4 +414,21 @@ uint8_t SIM900::cipStatus()
 	if(strstr(atRxBuffer,"PDP") != NULL)
 		return 9;
 	return 0xFF;
+}
+
+void SIM900::getIMEI(char *imei)
+{
+	GSM->println("AT+GSN");
+	if(confirmAtCommand("OK",2000))
+		return;
+	char *ptr = atRxBuffer;
+	char *str = NULL;	
+	ptr = strtok_r(ptr,"\r\n",&str);
+	ptr = strtok_r(NULL,"\r\n",&str);
+	for(uint8_t e = 0; e < 16; e++)
+	{
+		imei[e] = ptr[e];
+	}
+	imei[15] = '\0';
+	return;
 }
