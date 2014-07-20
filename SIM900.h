@@ -32,10 +32,11 @@
 #define CMGS2_TO		20000L
 #define UDPREPLY_TO		5000L
 
-
 #define INDEX_SIZE		100
 #define DELIMITER		"."
 #define OK				"OK"
+
+#define BAUD_RATE		9600UL
 
 /*******EEPROM ADDRESSES**********/
 
@@ -43,8 +44,9 @@ struct geoSmsData
 {
 	bool smsDataValid;
     char smsNumber[39];
+	uint32_t emailAPN;
 	uint8_t smsCmdNum;
-	char smsCmdString[30];
+	char smsCmdString[70];
 	uint8_t smsPending;
 };
 
@@ -53,21 +55,23 @@ class SIM900
 	public:
 		SIM900(AltSoftSerial *ser);
 		char atRxBuffer[INDEX_SIZE];
-		uint8_t init(unsigned long);
+		uint8_t init(unsigned long baudRate = BAUD_RATE);
 		uint8_t checkForMessages();
 		uint8_t deleteMessage(int);
 		uint8_t readMessageBreakOut(int);
-		bool prepareSMS(char *);
+		bool prepareSMS(char *, uint32_t);
 		uint8_t sendSMS();
 		uint8_t deleteAllMessages();
 		uint8_t gsmSleepMode(int);
 		uint8_t signalQuality();
 		uint8_t powerDownGSM();
+		void rebootGSM();
 		void initializeGSM();
-		uint8_t checkNetworkRegistration();
+		bool checkNetworkRegistration();
 		uint8_t getGeo(geoSmsData *, char *);
 		uint8_t confirmAtCommand(char *, unsigned long);
 		uint8_t cipStatus();
+		void getIMEI(char *);
 	private:
 		uint8_t powerOnGSM();
 		uint8_t callReady();

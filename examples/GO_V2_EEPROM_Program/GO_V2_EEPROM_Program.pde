@@ -12,6 +12,7 @@
 #define GEODATAFORMAT1			48
 #define GEODATAFORMAT2			50
 #define BATTERYLOWLEVEL    		52
+#define APN						53
 #define IOSTATE0				57
 #define IOSTATE1				58
 #define IOSTATE2				59
@@ -97,7 +98,7 @@
 void setup()
 {
 	Serial.begin(9600);
-	delay(2000);
+	delay(500);
     Serial.flush();
     while(!Serial.available()){}
 
@@ -105,7 +106,7 @@ void setup()
 
 void loop()
 {
-	char pincode[5] = "1234"; //pincode must be 4 digits
+	char pincode[5] = "0000"; //pincode must be 4 digits
 	char smsaddress[39] = ""; //smsaddress must be 38 characters or less
 	char batteryMsg[25] = "Low Battery Alert";
 	char motionMsg[25] = "Motion Detected";
@@ -113,14 +114,14 @@ void loop()
 	char fence2Msg[25] = "Fence 2 Breach";
 	char fence3Msg[25] = "Fence 3 Breach";
 	char speedMsg[25] = "Speed Limit Exceeded";
-	char geoIDMsg[25] = "GO1";
+	char geoIDMsg[25] = "GO FW_2.0";
 	char maxSpeedMsg[25] = "Max Speed = ";
 	char http1[100] = "http://maps.google.com/maps?q=";
-	char http2[100] = "+(";
+	char http2[100] = " ("; // originally was "+(" . Replaced + with space because of new google maps app
 	char http3[100] = ")&z=19";
 	char d4msg[25] = "D4 Switch Alert";
 	char d10msg[25] = "D10 Switch Alert";
-	char imei[16] = ""; //15 digit number on GSM chip
+	char imei[16] = " "; //15 digit number on GSM chip
 	char gprsApn[50] = "wholesale"; //SIM card specific APN.  wholesale is used on Platinumtel
 	char gprsUser[25] = "";
 	char gprsPass[25] = "";
@@ -208,6 +209,12 @@ void loop()
 	if(w)EEPROM_writeAnything(BATTERYLOWLEVEL,(uint8_t)abyte);
 	Serial.print(abyte,DEC);Serial.print(SPACE2);
 	EEPROM_readAnything(BATTERYLOWLEVEL,abyte);Serial.println(abyte,DEC);
+	
+	Serial.print(APN);Serial.print(SPACE);
+	unsigned long ulong = 500;
+	if(w)EEPROM_writeAnything(APN,(unsigned long)ulong);
+	Serial.print(ulong,DEC);Serial.print(SPACE2);
+	EEPROM_readAnything(APN,ulong);Serial.println(ulong,DEC);	
 
 	Serial.print(IOSTATE0);Serial.print(SPACE);
 	abyte = 0;
@@ -276,7 +283,7 @@ void loop()
 	EEPROM_readAnything(SLEEPTIMECONFIG,abyte);Serial.println(abyte,DEC);
 
 	Serial.print(SLEEPTIMEON);Serial.print(SPACE);
-	unsigned long ulong = 0;
+	ulong = 0;
 	if(w)EEPROM_writeAnything(SLEEPTIMEON,(unsigned long)ulong);
 	Serial.print(ulong,DEC);Serial.print(SPACE2);
 	EEPROM_readAnything(SLEEPTIMEON,ulong);Serial.println(ulong,DEC);
@@ -474,13 +481,13 @@ void loop()
 	EEPROM_readAnything(BMA0X26,abyte);Serial.println(abyte,DEC);
 	
 	Serial.print(BMA0X27);Serial.print(SPACE);
-	abyte = 2;  // original was 0
+	abyte = 0;  // original was 0
 	if(w)EEPROM_writeAnything(BMA0X27,(uint8_t)abyte);
 	Serial.print(abyte,DEC);Serial.print(SPACE2);
 	EEPROM_readAnything(BMA0X27,abyte);Serial.println(abyte,DEC);
 	
 	Serial.print(BMA0X28);Serial.print(SPACE);
-	abyte = 15;
+	abyte = 4;
 	if(w)EEPROM_writeAnything(BMA0X28,(uint8_t)abyte);
 	Serial.print(abyte,DEC);Serial.print(SPACE2);
 	EEPROM_readAnything(BMA0X28,abyte);Serial.println(abyte,DEC);

@@ -6,6 +6,7 @@ void command7()  //toggle IO pins
 	uint8_t ioState;
 	uint8_t ioAddress;
 	uint16_t ioData;
+	uint16_t toggleDelay = 0;
 	ptr = strtok_r(smsData.smsCmdString,".",&str);
 	ioChannel = atoi(ptr);
 	switch(ioChannel)
@@ -47,10 +48,27 @@ void command7()  //toggle IO pins
 		case 2:
 		case 3:
 			ptr = strtok_r(NULL,".",&str);
-			if(!(atoi(ptr)))
-				digitalWrite(ioAddress,0);
-			else
-				digitalWrite(ioAddress,1);
+			switch(atoi(ptr))
+			{
+				case 2:
+					toggleDelay = atoi(strtok_r(NULL,".",&str));
+				case 0:
+					digitalWrite(ioAddress,0);
+					if(toggleDelay)
+					{
+						delay(toggleDelay * 10);
+						digitalWrite(ioAddress,1);
+					}
+					break;
+				case 1:
+					digitalWrite(ioAddress,1);
+					if(toggleDelay)
+					{
+						delay(toggleDelay * 10);
+						digitalWrite(ioAddress,0);
+					}
+					break;
+			}
 			return;
 			break;
 		case 4:
@@ -59,8 +77,8 @@ void command7()  //toggle IO pins
 		default :
 			return;
 	}
-	goesWhere(smsData.smsNumber);
-	if(!sim900.prepareSMS(smsData.smsNumber))
+	goesWhere(smsData.smsNumber,3);
+	if(!sim900.prepareSMS(smsData.smsNumber,apn))
 	{
 		GSM.print("IO Channel ");GSM.print(ioChannel,DEC);
 		GSM.print(" = ");GSM.println(ioData,DEC);

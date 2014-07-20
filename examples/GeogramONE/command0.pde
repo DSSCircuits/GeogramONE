@@ -6,8 +6,8 @@ void command0()  //send coordinates
 	EEPROM_readAnything(GEODATAFORMAT2,geoDataFormat);
 	if(rssi)
 	{
-		goesWhere(smsData.smsNumber);
-		if(!sim900.prepareSMS(smsData.smsNumber))
+		goesWhere(smsData.smsNumber,3);
+		if(!sim900.prepareSMS(smsData.smsNumber,apn))
 		{	
 			if(!(geoDataFormat & 0x8000))
 				printHTTP(&geoDataFormat, rssi);

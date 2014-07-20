@@ -14,60 +14,60 @@ void command6()
 		case BMA0X25: case BMA0X26: case BMA0X27: case BMA0X28: case DATEFORMAT: case ENGMETRIC: case SLEEPTIMECONFIG:
 		case BREACHSPEED: case BREACHREPS: case SPEEDHYST: case UDPPOWERPROFILE: case SMSPOWERPROFILE:
 		case UDPSPEEDBAT: case UDPSPEEDPLUG: case SMSSPEEDBAT: case SMSSPEEDPLUG:
- 			ptr = strtok_r(NULL,".",&str);
+ 			ptr = strtok_r(NULL,":",&str);
 			EEPROM.write(eepAdd,(uint8_t)atoi(ptr));
 			break;
 	//int8_t
 		case TIMEZONE:
-			ptr = strtok_r(NULL,".",&str);
+			ptr = strtok_r(NULL,":",&str);
 			EEPROM.write(eepAdd,(int8_t)atoi(ptr));
 			break;
 	//uint16_t
 		case GEODATAFORMAT1: case GEODATAFORMAT2: case SPEEDLIMIT: case GPRS_PORT:
-			ptr = strtok_r(NULL,".",&str);
+			ptr = strtok_r(NULL,":",&str);
 			EEPROM_writeAnything(eepAdd,(uint16_t)(atoi(ptr)));
 			break;
 	//unsigned long 
 		case RADIUS1: case RADIUS2: case RADIUS3: case SLEEPTIMEON:
 		case SLEEPTIMEOFF: case SMSSENDINTERVALBAT: case SMSSENDINTERVALPLUG: 
-		case UDPSENDINTERVALBAT: case UDPSENDINTERVALPLUG: 
-			ptr = strtok_r(NULL,".",&str);
+		case UDPSENDINTERVALBAT: case UDPSENDINTERVALPLUG: case APN:
+			ptr = strtok_r(NULL,":",&str);
 			EEPROM_writeAnything(eepAdd,(unsigned long)(atol(ptr)));
 			break;
 	// long
 		case LATITUDE1: case LATITUDE2: case LATITUDE3: case LONGITUDE1: case LONGITUDE2: case LONGITUDE3:
-			ptr = strtok_r(NULL,".",&str);
+			ptr = strtok_r(NULL,":",&str);
 			EEPROM_writeAnything(eepAdd,(long)(atol(ptr)));
 			break;
 	//string length 4 characters...not including terminating null
 		case PINCODE:
-			ptr = strtok_r(NULL,".",&str);
+			ptr = strtok_r(NULL,":",&str);
 			writeEEPROM(ptr,eepAdd,4);
 			break;
 	//string length 38 characters...not including terminating null
 		case SMSADDRESS:
-			ptr = strtok_r(NULL,".",&str);
+			ptr = strtok_r(NULL,":",&str);
 			writeEEPROM(ptr,eepAdd,38);
 			break;
 	//string length 24 characters...not including terminating null
 		case MOTIONMSG: case BATTERYMSG: case FENCE1MSG: case FENCE2MSG: case FENCE3MSG: case SPEEDMSG: case MAXSPEEDMSG: case GEOGRAMONEID:
 		case D4MSG: case D10MSG: case GPRS_USER: case GPRS_PASS:
-			ptr = strtok_r(NULL,"..",&str); //changed to double period
+			ptr = strtok_r(NULL,":",&str); //changed to double period
 			writeEEPROM(ptr,eepAdd,24);
 			break;
 	//string length 49 characters...not including terminating null
 		case HTTP1: case HTTP2: case HTTP3: case GPRS_APN:
-			ptr = strtok_r(NULL,"..",&str); //changed to double period
+			ptr = strtok_r(NULL,"$",&str); //changed to double period
 			writeEEPROM(ptr,eepAdd,49);
 			break;
 	//string length 15 characters...not including terminating null
 		case IMEI: case GPRS_HOST:
-			ptr = strtok_r(NULL,"..",&str);
+			ptr = strtok_r(NULL,":",&str);
 			writeEEPROM(ptr,eepAdd,15);
 			break;
 	//string length 10 characters...not including terminating null
 		case UDP_HEADER: case UDP_REPLY: 
-			ptr = strtok_r(NULL,"..",&str); //changed to double period from colon
+			ptr = strtok_r(NULL,":",&str); //changed to double period from colon
 			writeEEPROM(ptr,eepAdd,10);
 			break;
 			

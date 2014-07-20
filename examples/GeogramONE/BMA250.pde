@@ -44,3 +44,10 @@ void BMA250disableInterrupts()
 	I2c.write(BMA_ADD,(uint8_t)0x17,(uint8_t)0x00);  	//disable Interrupts
 }
 
+void BMA250sleepMode(uint8_t regOneOne)
+{
+	I2c.write(BMA_ADD,(uint8_t)0x11,regOneOne);
+}
+
+
+
