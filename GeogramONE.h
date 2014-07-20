@@ -22,6 +22,7 @@
 #define GEODATAFORMAT1			48
 #define GEODATAFORMAT2			50
 #define BATTERYLOWLEVEL    		52
+#define APN						53
 #define IOSTATE0				57
 #define IOSTATE1				58
 #define IOSTATE2				59
@@ -109,12 +110,13 @@
 #define FUELGAUGEPIN       		0x07 //Fuel gauge interrupt pin
 
 
+
 class GeogramONE 
 {
 	public:
 		GeogramONE( );
 		void init( );
-		void goToSleep();
+		void goToSleep(uint8_t, bool, bool);
 		void configureIO( uint8_t, uint8_t );
 		void configureFence(uint8_t , geoFence *);
 		void configureBreachParameters(uint8_t *, uint8_t *);

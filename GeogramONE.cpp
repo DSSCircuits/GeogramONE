@@ -24,16 +24,19 @@ GeogramONE::GeogramONE()
 }
 
 
-void GeogramONE::goToSleep()
+void GeogramONE::goToSleep(uint8_t sleepMode, bool backupPCI, bool disableAltSS)
 {
-	delay(200);  //need delay because GSM module is shutting down. 1000 works
 	uint8_t pcicrReg = PCICR; //backup the current Pin Change Interrupt register
-	PCICR = 0; // disable all pin change interrupts. Need to do this because of NewSoftSerial
-
-	pinMode(9,INPUT);  //shut off NewSoftSerial Tx pin 
-	digitalWrite(9,LOW); //set to high impedance
-	digitalWrite(8,LOW); // set NewSoftSerial Rx pin to high impedance
-	set_sleep_mode (SLEEP_MODE_PWR_DOWN);
+	if(disableAltSS)
+	{
+		pinMode(9,INPUT);  //shut off AltSoftSerial Tx pin 
+		digitalWrite(9,LOW); //set to high impedance
+		digitalWrite(8,LOW); // set AltSoftSerial Rx pin to high impedance
+	}
+	if(backupPCI)
+		PCICR = 0; // disable all pin change interrupts. Need to do this because of NewSoftSerial
+	ADCSRA = 0; //disable ADC to save power
+	set_sleep_mode (sleepMode);
 	sleep_enable();	
 	MCUCR = _BV (BODS) | _BV (BODSE);
 	MCUCR = _BV (BODS);
@@ -41,11 +44,16 @@ void GeogramONE::goToSleep()
   
 /*********ATMEGA is sleeping at this point***************/  
 	sleep_disable();
-	pinMode(9,OUTPUT); //restore NewSoftSerial settings
-	digitalWrite(9,HIGH);
-	digitalWrite(8,HIGH);
-	PCICR = pcicrReg; //restore Pin Change Interrupt register
+	if(disableAltSS)
+	{
+		pinMode(9,OUTPUT); //restore AltSoftSerial settings
+		digitalWrite(9,HIGH);
+		digitalWrite(8,HIGH);
+	}
+	if(backupPCI)
+		PCICR = pcicrReg; //restore Pin Change Interrupt register
 }
+
 
 void GeogramONE::init()
 {
