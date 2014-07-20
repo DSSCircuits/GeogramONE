@@ -21,9 +21,7 @@ uint8_t udpOrange()
 					static unsigned long resetGSM = millis();
 					if((millis() - resetGSM) >= 300000) //if more than 5 minutes reboot GSM module
 					{
-						sim900.powerDownGSM();
-						delay(2000);
-						sim900.init(9600);
+						sim900.rebootGSM();
 						gsmPowerStatus = true;
 						resetGSM = millis();
 					}
@@ -54,7 +52,7 @@ uint8_t udpOrange()
 				sim900.confirmAtCommand("\r\n",100);
 			case 4:
 			{
-				GSM.print("AT+CIPSTART=\"UDP\",\"");
+				GSM.print("AT+CIPSTART=\"UDP\",\""); 
 				printEEPROM(GPRS_HOST);
 				GSM.print("\",\"");
 				uint16_t portNumber = 0;
@@ -77,6 +75,12 @@ uint8_t udpOrange()
 			default:
 				return 2;
 		}
+	}
+	if(EEPROM.read(IMEI) == ' ')
+	{
+		char imei[16];
+		sim900.getIMEI(imei);
+		writeEEPROM(imei,IMEI,15);
 	}
 	GSM.println("AT+CIPSEND");
 	if(!sim900.confirmAtCommand(">",3000))
@@ -101,8 +105,7 @@ uint8_t udpOrange()
 		GSM.print(";");
 		GSM.print(lastValid.altitude);
 		GSM.print(";");
-	//	GSM.println(lastValid.satellitesUsed);
-		GSM.println("NA");
+		GSM.println(lastValid.satellitesUsed);
 		GSM.println((char)0x1A);
 		if(sim900.confirmAtCommand("OK\r\n",3000))
 		{
